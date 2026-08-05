@@ -24,7 +24,7 @@ import math
 import os
 import sys
 import time
-import traceback
+import traceback  # noqa: retry/backoff usa time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timezone
 
@@ -54,8 +54,21 @@ CRITERIA = {
     "min_market_cap": 0,           # nessun filtro dimensionale: universo massimo
 }
 
-MAX_WORKERS = 12
+MAX_WORKERS = 8
 RESULTS_DIR = "results"
+INFO_CACHE_PATH = "/tmp/yf_info_cache.json"
+
+# Snapshot dei dati .info condiviso con il moonshot screener (evita di
+# rifare ~7.000 chiamate a Yahoo nello stesso job)
+INFO_CACHE = {}
+CACHE_KEYS = [
+    "sector", "industry", "country", "currency", "longName", "shortName",
+    "marketCap", "currentPrice", "regularMarketPrice", "returnOnEquity",
+    "debtToEquity", "freeCashflow", "revenueGrowth", "earningsQuarterlyGrowth",
+    "trailingPegRatio", "trailingPE", "forwardPE", "earningsGrowth",
+    "totalRevenue", "grossMargins", "fiftyTwoWeekHigh", "twoHundredDayAverage",
+    "totalCash", "totalDebt", "currentRatio",
+]
 
 WIKI = "https://en.wikipedia.org/wiki/"
 
@@ -230,6 +243,8 @@ def screen_ticker(symbol, index_name):
     try:
         tk = yf.Ticker(symbol)
         info = tk.info or {}
+        if info.get("marketCap") is not None or info.get("regularMarketPrice") is not None:
+            INFO_CACHE[symbol] = {k: info.get(k) for k in CACHE_KEYS}
 
         sector = info.get("sector")
         mcap = info.get("marketCap")
@@ -289,6 +304,45 @@ def screen_ticker(symbol, index_name):
         return {"ticker": symbol, "index": index_name, "error": str(e), "passed": False}
 
 
+# ----------------------------- Esecuzione con retry -----------------------------
+
+
+def run_screen(universe, fn, workers=MAX_WORKERS, retries=2, pause=25):
+    """Esegue fn(ticker, indice) su tutto l'universo con retry sugli errori:
+    Yahoo limita le richieste massive, quindi i ticker falliti vengono
+    ritentati (fino a `retries` volte) a concorrenza ridotta dopo una pausa."""
+    results = {}
+    pending = dict(universe)
+    for attempt in range(retries + 1):
+        errored = {}
+        w = workers if attempt == 0 else 4
+        with ThreadPoolExecutor(max_workers=w) as ex:
+            futures = {ex.submit(fn, t, i): t for t, i in pending.items()}
+            done = 0
+            for fut in as_completed(futures):
+                r = fut.result()
+                done += 1
+                if done % 500 == 0:
+                    print(f"  passata {attempt+1}: {done}/{len(pending)}…")
+                t = r.get("ticker")
+                if r.get("error"):
+                    errored[t] = pending.get(t)
+                else:
+                    results[t] = r
+        if not errored:
+            break
+        print(f"  {len(errored)} ticker in errore alla passata {attempt+1}")
+        pending = errored
+        if attempt < retries:
+            print(f"  nuovo tentativo tra {pause}s a concorrenza ridotta…")
+            time.sleep(pause)
+    for t, i in pending.items():
+        if t not in results:
+            results[t] = {"ticker": t, "index": i,
+                          "error": "irrecuperabile dopo i retry", "passed": False}
+    return list(results.values())
+
+
 # ----------------------------- Main -----------------------------
 
 
@@ -303,20 +357,16 @@ def main():
               "sovrascrivere i risultati.", file=sys.stderr)
         sys.exit(1)
 
-    results, errors = [], 0
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
-        futures = {
-            ex.submit(screen_ticker, t, idx): t for t, idx in universe.items()
-        }
-        done = 0
-        for fut in as_completed(futures):
-            r = fut.result()
-            done += 1
-            if done % 100 == 0:
-                print(f"  analizzati {done}/{len(universe)}…")
-            if r.get("error"):
-                errors += 1
-            results.append(r)
+    results = run_screen(universe, screen_ticker)
+    errors = sum(1 for r in results if r.get("error"))
+
+    # Salva la cache dei dati per il moonshot screener (stesso job)
+    try:
+        with open(INFO_CACHE_PATH, "w") as f:
+            json.dump(INFO_CACHE, f)
+        print(f"Cache dati salvata: {len(INFO_CACHE)} ticker")
+    except Exception as e:
+        print(f"[WARN] cache non salvata: {e}", file=sys.stderr)
 
     passed = sorted(
         [r for r in results if r.get("passed")],
