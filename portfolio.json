@@ -1,0 +1,72 @@
+{
+  "_istruzioni": "Posizioni del portafoglio Trade Republic di Mattia. Aggiorna questo file quando compri o vendi: dal repository GitHub apri il file, clicca la matita (Edit), modifica e Commit changes. I ticker sono in formato Yahoo Finance (listing principale). ATTENZIONE valute: i prezzi medi di carico sono in EUR (come mostrati da Trade Republic), ma su Yahoo i titoli USA quotano in USD e NanoXplore in CAD: per calcolare la performance confrontare i prezzi solo dopo conversione nella stessa valuta (usare il cambio EUR/USD e EUR/CAD attuale).",
+  "valuta_base": "EUR",
+  "valuta_prezzo_medio_carico": "EUR",
+  "aggiornato_al": "2026-08-05",
+  "liquidita": 0,
+  "posizioni": [
+    {
+      "ticker_yahoo": "KSPI",
+      "nome": "Kaspi.kz (ADR/GDR)",
+      "quantita": 16.225,
+      "prezzo_medio_carico": 67.86,
+      "note": "fintech/e-commerce Kazakistan; quota USD su NASDAQ"
+    },
+    {
+      "ticker_yahoo": "NU",
+      "nome": "Nu Holdings",
+      "quantita": 93.514,
+      "prezzo_medio_carico": 11.88,
+      "note": "banca digitale Brasile/LatAm; quota USD su NYSE"
+    },
+    {
+      "ticker_yahoo": "CRSP",
+      "nome": "CRISPR Therapeutics",
+      "quantita": 11.2,
+      "prezzo_medio_carico": 43.60,
+      "note": "biotech gene editing; quota USD su NASDAQ"
+    },
+    {
+      "ticker_yahoo": "S",
+      "nome": "SentinelOne",
+      "quantita": 27.45,
+      "prezzo_medio_carico": 12.79,
+      "note": "cybersecurity; quota USD su NYSE"
+    },
+    {
+      "ticker_yahoo": "NBIX",
+      "nome": "Neurocrine Biosciences",
+      "quantita": 3.536,
+      "prezzo_medio_carico": 141.68,
+      "note": "farmaceutico/neuroscienze; quota USD su NASDAQ"
+    },
+    {
+      "ticker_yahoo": "TSM",
+      "nome": "TSMC (ADR)",
+      "quantita": 1.1215,
+      "prezzo_medio_carico": 402.14,
+      "note": "semiconduttori; quota USD su NYSE"
+    },
+    {
+      "ticker_yahoo": "AVGO",
+      "nome": "Broadcom",
+      "quantita": 1.0269,
+      "prezzo_medio_carico": 341.81,
+      "note": "semiconduttori/software; quota USD su NASDAQ"
+    },
+    {
+      "ticker_yahoo": "STLAM.MI",
+      "nome": "Stellantis",
+      "quantita": 38.702,
+      "prezzo_medio_carico": 9.09,
+      "note": "auto; listing Milano in EUR (nessuna conversione necessaria)"
+    },
+    {
+      "ticker_yahoo": "GRA.TO",
+      "nome": "NanoXplore",
+      "quantita": 149.34,
+      "prezzo_medio_carico": 1.68,
+      "note": "grafene/materiali avanzati, small cap canadese; quota CAD a Toronto"
+    }
+  ]
+}
