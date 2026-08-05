@@ -51,7 +51,7 @@ CRITERIA = {
     "debt_equity_max": 1.0,
     "peg_max": 1.0,
     "fcf_min": 0.0,
-    "min_market_cap": 300e6,       # esclude micro-cap con dati inaffidabili
+    "min_market_cap": 0,           # nessun filtro dimensionale: universo massimo
 }
 
 MAX_WORKERS = 12
@@ -111,6 +111,42 @@ def _extract(page, candidates, suffix="", transform=None):
     return tickers
 
 
+def _us_full_listing():
+    """Tutti i titoli quotati USA (NASDAQ + NYSE + AMEX) dal symbol directory
+    ufficiale di Nasdaq Trader. Esclude ETF, test issue e strumenti derivati
+    (warrant, preferred, unit)."""
+    tickers = []
+    sources = [
+        ("https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt", "Symbol", "ETF", "Test Issue"),
+        ("https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt", "ACT Symbol", "ETF", "Test Issue"),
+    ]
+    for url, sym_col, etf_col, test_col in sources:
+        try:
+            resp = requests.get(url, headers=UA_HEADERS, timeout=30)
+            resp.raise_for_status()
+            lines = resp.text.splitlines()
+            header = lines[0].split("|")
+            idx_sym = header.index(sym_col)
+            idx_etf = header.index(etf_col) if etf_col in header else None
+            idx_test = header.index(test_col) if test_col in header else None
+            for line in lines[1:]:
+                parts = line.split("|")
+                if len(parts) <= idx_sym or line.startswith("File Creation"):
+                    continue
+                if idx_etf is not None and len(parts) > idx_etf and parts[idx_etf] == "Y":
+                    continue  # ETF
+                if idx_test is not None and len(parts) > idx_test and parts[idx_test] == "Y":
+                    continue  # test issue
+                sym = parts[idx_sym].strip()
+                # esclude preferred/warrant/unit e simboli anomali
+                if not sym or len(sym) > 5 or any(c in sym for c in "$^~="):
+                    continue
+                tickers.append(sym.replace(".", "-"))
+        except Exception as e:
+            print(f"[WARN] US listing {url}: {e}", file=sys.stderr)
+    return tickers
+
+
 def build_universe():
     """Costruisce l'universo globale. Ogni indice è opzionale: se una fonte
     fallisce si prosegue con le altre."""
@@ -143,6 +179,9 @@ def build_universe():
         "Hang_Seng_Index", ["Ticker", "Symbol", "Code"], suffix=".HK",
         transform=lambda t: t.replace("SEHK:", "").strip().zfill(4),
     )
+
+    # Per ultimo, così i membri degli indici mantengono l'etichetta dell'indice
+    u["USA (altre quotate)"] = _us_full_listing()
 
     tickers = {}
     for index_name, lst in u.items():
