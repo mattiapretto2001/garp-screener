@@ -1,8 +1,8 @@
 {
  "screener": "moonshot",
  "date": "2026-08-05",
- "generated_at_utc": "2026-08-05T18:38:38.896007+00:00",
- "duration_seconds": 141,
+ "generated_at_utc": "2026-08-05T21:19:38.115294+00:00",
+ "duration_seconds": 320,
  "criteria": {
   "mcap_min": 150000000.0,
   "mcap_max": 15000000000.0,
@@ -17,11 +17,9 @@
  },
  "universe_size": 7383,
  "analyzed": 7383,
- "errors": 6560,
+ "errors": 6540,
  "passed_count": 1,
- "new_today": [
-  "IDR.MC"
- ],
+ "new_today": [],
  "dropped_since_yesterday": [],
  "passed": [
   {
