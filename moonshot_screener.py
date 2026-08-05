@@ -58,8 +58,18 @@ CRITERIA = {
     "dilution_cagr_max": 0.15,
 }
 
-MAX_WORKERS = 12
+MAX_WORKERS = 8
 RESULTS_DIR = "results-moonshot"
+
+# Cache dei dati .info scritta dallo screener GARP nello stesso job: evita
+# di rifare ~7.000 chiamate a Yahoo (e i relativi limiti di frequenza)
+try:
+    with open(base.INFO_CACHE_PATH) as _f:
+        INFO_CACHE = json.load(_f)
+    print(f"Cache dati GARP caricata: {len(INFO_CACHE)} ticker")
+except Exception:
+    INFO_CACHE = {}
+    print("[WARN] cache dati non trovata: scarico i dati da Yahoo", file=sys.stderr)
 
 
 def _dilution_cagr(tk):
@@ -118,8 +128,11 @@ def _eps_revised_up(tk):
 
 def screen_ticker(symbol, index_name):
     try:
-        tk = yf.Ticker(symbol)
-        info = tk.info or {}
+        tk = None
+        info = INFO_CACHE.get(symbol)
+        if not info:
+            tk = yf.Ticker(symbol)
+            info = tk.info or {}
 
         sector = info.get("sector")
         mcap = info.get("marketCap")
@@ -181,6 +194,9 @@ def screen_ticker(symbol, index_name):
             return result
 
         # Stage 2: diluizione (filtro) + punteggio bonus
+        # (solo qui servono le chiamate di rete: pochi ticker superstiti)
+        if tk is None:
+            tk = yf.Ticker(symbol)
         dil = _dilution_cagr(tk)
         result["dilution_cagr"] = dil
         checks["dilution_ok"] = dil is None or dil < CRITERIA["dilution_cagr_max"]
@@ -228,18 +244,8 @@ def main():
         print("ERRORE: universo troppo piccolo, interrompo.", file=sys.stderr)
         sys.exit(1)
 
-    results, errors = [], 0
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
-        futures = {ex.submit(screen_ticker, t, i): t for t, i in universe.items()}
-        done = 0
-        for fut in as_completed(futures):
-            r = fut.result()
-            done += 1
-            if done % 500 == 0:
-                print(f"  analizzati {done}/{len(universe)}…")
-            if r.get("error"):
-                errors += 1
-            results.append(r)
+    results = base.run_screen(universe, screen_ticker, workers=MAX_WORKERS)
+    errors = sum(1 for r in results if r.get("error"))
 
     passed = sorted(
         [r for r in results if r.get("passed")],
