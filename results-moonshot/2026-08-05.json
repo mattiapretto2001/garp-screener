@@ -1,8 +1,8 @@
 {
  "screener": "moonshot",
  "date": "2026-08-05",
- "generated_at_utc": "2026-08-05T17:47:43.590976+00:00",
- "duration_seconds": 58,
+ "generated_at_utc": "2026-08-05T18:38:38.896007+00:00",
+ "duration_seconds": 141,
  "criteria": {
   "mcap_min": 150000000.0,
   "mcap_max": 15000000000.0,
@@ -17,9 +17,50 @@
  },
  "universe_size": 7383,
  "analyzed": 7383,
- "errors": 7300,
- "passed_count": 0,
- "new_today": [],
+ "errors": 6560,
+ "passed_count": 1,
+ "new_today": [
+  "IDR.MC"
+ ],
  "dropped_since_yesterday": [],
- "passed": []
+ "passed": [
+  {
+   "ticker": "IDR.MC",
+   "name": "Indra Sistemas, S.A.",
+   "index": "IBEX 35",
+   "sector": "Technology",
+   "industry": "Information Technology Services",
+   "country": "Spain",
+   "market_cap": 10756254720,
+   "revenue_ttm": 6340870144,
+   "revenue_growth_qoq_yoy": 0.449,
+   "gross_margin": 0.25689,
+   "price": 61.42,
+   "pct_of_52w_high": 0.9284958427815571,
+   "free_cash_flow": 243773120,
+   "total_cash": 2877628928,
+   "total_debt": 1627261056,
+   "runway_years": null,
+   "current_ratio": 1.798,
+   "checks": {
+    "sector_ok": true,
+    "mcap_ok": true,
+    "revenue_scale_ok": true,
+    "hypergrowth_ok": true,
+    "gross_margin_ok": true,
+    "momentum_ok": true,
+    "runway_ok": true,
+    "debt_ok": true,
+    "liquidity_ok": true,
+    "dilution_ok": true
+   },
+   "dilution_cagr": null,
+   "sales_cagr_multi_year": null,
+   "passed": true,
+   "score": 3,
+   "accelerating": false,
+   "operating_margin_improving": null,
+   "eps_estimates_revised_up": null
+  }
+ ]
 }
