@@ -29,7 +29,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timezone
 
 import pandas as pd
+import requests
 import yfinance as yf
+from io import StringIO
 
 # ----------------------------- Configurazione -----------------------------
 
@@ -60,9 +62,20 @@ WIKI = "https://en.wikipedia.org/wiki/"
 # ----------------------------- Universo titoli -----------------------------
 
 
+UA_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0 Safari/537.36 GARP-screener/1.0",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+
 def _read_wiki_tables(page: str):
+    """Wikipedia rifiuta lo user-agent di default di urllib: usiamo requests
+    con intestazioni da browser e poi parsiamo l'HTML."""
     url = WIKI + page
-    return pd.read_html(url)
+    resp = requests.get(url, headers=UA_HEADERS, timeout=30)
+    resp.raise_for_status()
+    return pd.read_html(StringIO(resp.text))
 
 
 def _first_col(df, candidates):
@@ -245,6 +258,11 @@ def main():
     print("Costruzione universo…")
     universe = build_universe()
     print(f"Universo totale: {len(universe)} ticker unici")
+    if len(universe) < 200:
+        print(f"ERRORE: universo troppo piccolo ({len(universe)} ticker): "
+              "le fonti degli indici non sono raggiungibili. Interrompo senza "
+              "sovrascrivere i risultati.", file=sys.stderr)
+        sys.exit(1)
 
     results, errors = [], 0
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
