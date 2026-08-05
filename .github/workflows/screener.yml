@@ -1,0 +1,44 @@
+name: GARP Daily Screener
+
+on:
+  schedule:
+    - cron: "5 20 * * 1-5"
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths-ignore:
+      - "results/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: screener
+  cancel-in-progress: false
+
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install --quiet yfinance pandas lxml
+
+      - name: Run GARP screener
+        run: python garp_screener.py
+
+      - name: Commit results
+        run: |
+          git config user.name "garp-bot"
+          git config user.email "actions@github.com"
+          git add results/
+          git diff --cached --quiet || git commit -m "Screening GARP $(date -u +%F)"
+          git push
