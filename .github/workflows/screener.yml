@@ -2,12 +2,15 @@ name: GARP Daily Screener
 
 on:
   schedule:
+    # 20:05 UTC lun-ven = 22:05 ora italiana (estate) / 21:05 (inverno),
+    # dopo la chiusura di Wall Street (20:00 UTC in estate).
+    # Nota: GitHub può ritardare i cron di 5-15 minuti.
     - cron: "5 20 * * 1-5"
   workflow_dispatch: {}
   push:
     branches: [main]
     paths-ignore:
-      - "results/**"
+      - "results/**"   # i commit dei risultati non ri-avviano lo screening
 
 permissions:
   contents: write
@@ -35,10 +38,13 @@ jobs:
       - name: Run GARP screener
         run: python garp_screener.py
 
+      - name: Run Moonshot screener
+        run: python moonshot_screener.py
+
       - name: Commit results
         run: |
           git config user.name "garp-bot"
           git config user.email "actions@github.com"
-          git add results/
-          git diff --cached --quiet || git commit -m "Screening GARP $(date -u +%F)"
+          git add results/ results-moonshot/
+          git diff --cached --quiet || git commit -m "Screening GARP+Moonshot $(date -u +%F)"
           git push
