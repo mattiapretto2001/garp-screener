@@ -1,0 +1,31 @@
+{
+ "date": "2026-08-05",
+ "generated_at_utc": "2026-08-05T16:45:58.576659+00:00",
+ "duration_seconds": 1,
+ "criteria": {
+  "sales_growth_5y_min": 0.1,
+  "sales_qoq_min": 0.05,
+  "eps_qoq_min": 0.05,
+  "roe_min": 0.15,
+  "debt_equity_max": 1.0,
+  "peg_max": 1.0,
+  "fcf_min": 0.0,
+  "min_market_cap": 300000000.0
+ },
+ "excluded_sectors": [
+  "Basic Materials",
+  "Energy",
+  "Financial Services",
+  "Real Estate",
+  "Utilities"
+ ],
+ "universe_size": 0,
+ "analyzed": 0,
+ "errors": 0,
+ "passed_count": 0,
+ "new_today": [],
+ "dropped_since_yesterday": [],
+ "passed": [],
+ "near_miss_count": 0,
+ "near_miss": []
+}
