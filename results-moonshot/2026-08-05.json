@@ -1,0 +1,25 @@
+{
+ "screener": "moonshot",
+ "date": "2026-08-05",
+ "generated_at_utc": "2026-08-05T17:47:43.590976+00:00",
+ "duration_seconds": 58,
+ "criteria": {
+  "mcap_min": 150000000.0,
+  "mcap_max": 15000000000.0,
+  "revenue_ttm_min": 100000000.0,
+  "rev_growth_min": 0.25,
+  "gross_margin_min": 0.25,
+  "pct_of_52w_high_min": 0.7,
+  "runway_years_min": 2.0,
+  "debt_to_cash_max": 2.0,
+  "current_ratio_min": 1.2,
+  "dilution_cagr_max": 0.15
+ },
+ "universe_size": 7383,
+ "analyzed": 7383,
+ "errors": 7300,
+ "passed_count": 0,
+ "new_today": [],
+ "dropped_since_yesterday": [],
+ "passed": []
+}
