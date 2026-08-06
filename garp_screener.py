@@ -346,8 +346,7 @@ def run_screen(universe, fn, workers=MAX_WORKERS, retries=2, pause=25):
 # ----------------------------- Main -----------------------------
 
 
-def main():
-    started = datetime.now(timezone.utc)
+def load_universe_checked():
     print("Costruzione universo…")
     universe = build_universe()
     print(f"Universo totale: {len(universe)} ticker unici")
@@ -356,17 +355,44 @@ def main():
               "le fonti degli indici non sono raggiungibili. Interrompo senza "
               "sovrascrivere i risultati.", file=sys.stderr)
         sys.exit(1)
+    return universe
 
-    results = run_screen(universe, screen_ticker)
-    errors = sum(1 for r in results if r.get("error"))
 
-    # Salva la cache dei dati per il moonshot screener (stesso job)
+def shard_of(universe, shard, shards):
+    """Sottoinsieme deterministico dell'universo per il job parallelo N di M."""
+    items = sorted(universe.items())
+    return {t: i for k, (t, i) in enumerate(items) if k % shards == shard}
+
+
+def save_cache():
     try:
         with open(INFO_CACHE_PATH, "w") as f:
             json.dump(INFO_CACHE, f)
         print(f"Cache dati salvata: {len(INFO_CACHE)} ticker")
     except Exception as e:
         print(f"[WARN] cache non salvata: {e}", file=sys.stderr)
+
+
+def load_partials(prefix):
+    """Carica i risultati parziali prodotti dai job paralleli."""
+    import glob
+    pdir = os.environ.get("PARTIALS_DIR", "partials")
+    files = sorted(glob.glob(os.path.join(pdir, f"{prefix}-*.json")))
+    if not files:
+        print(f"ERRORE: nessun file parziale {prefix}-*.json in {pdir}", file=sys.stderr)
+        sys.exit(1)
+    all_results, usize = [], 0
+    for fp in files:
+        with open(fp) as f:
+            d = json.load(f)
+        all_results.extend(d["results"])
+        usize = max(usize, int(d.get("universe_size", 0)))
+    print(f"Uniti {len(files)} parziali {prefix}: {len(all_results)} risultati")
+    return all_results, usize
+
+
+def make_report(results, universe_size, started):
+    errors = sum(1 for r in results if r.get("error"))
 
     passed = sorted(
         [r for r in results if r.get("passed")],
@@ -404,7 +430,7 @@ def main():
         "duration_seconds": round((datetime.now(timezone.utc) - started).total_seconds()),
         "criteria": CRITERIA,
         "excluded_sectors": sorted(EXCLUDED_SECTORS),
-        "universe_size": len(universe),
+        "universe_size": universe_size,
         "analyzed": len(results),
         "errors": errors,
         "passed_count": len(passed),
@@ -428,7 +454,7 @@ def main():
     lines = [
         f"# Screening GARP — {today}",
         "",
-        f"Universo: {len(universe)} titoli | Superano tutti i filtri: **{len(passed)}**"
+        f"Universo: {universe_size} titoli | Superano tutti i filtri: **{len(passed)}**"
         f" | Nuovi oggi: **{len(new_today)}** | Usciti: {len(dropped)}",
         "",
         "| Ticker | Nome | Indice | Settore | PEG | ROE | D/E | Ricavi q/q | EPS q/q | CAGR ricavi | Nuovo |",
@@ -453,6 +479,44 @@ def main():
 
     print(f"\nCompletato: {len(passed)} titoli passano tutti i filtri "
           f"({len(new_today)} nuovi). Errori dati: {errors}.")
+
+
+def main():
+    """Tre modalità:
+    - SHARD/SHARDS impostate (job parallelo su GitHub Actions): analizza solo
+      la propria fetta di universo e salva i risultati parziali in partials/
+    - MODE=merge: unisce i parziali di tutti i job e genera il report finale
+    - nessuna variabile: run completo locale (universo intero in un processo)
+    """
+    started = datetime.now(timezone.utc)
+    mode = os.environ.get("MODE", "").strip().lower()
+    shard_env = os.environ.get("SHARD", "").strip()
+
+    if mode == "merge":
+        results, usize = load_partials("garp")
+        make_report(results, usize, started)
+        return
+
+    if shard_env != "":
+        shard = int(shard_env)
+        shards = int(os.environ.get("SHARDS", "8"))
+        universe = load_universe_checked()
+        sub = shard_of(universe, shard, shards)
+        print(f"Job parallelo {shard+1}/{shards}: {len(sub)} ticker")
+        results = run_screen(sub, screen_ticker)
+        save_cache()  # per il moonshot screener nello stesso job
+        os.makedirs("partials", exist_ok=True)
+        with open(os.path.join("partials", f"garp-{shard}.json"), "w") as f:
+            json.dump({"universe_size": len(universe), "results": results},
+                      f, default=str)
+        errors = sum(1 for r in results if r.get("error"))
+        print(f"Shard completato: {len(results)} risultati, {errors} errori")
+        return
+
+    universe = load_universe_checked()
+    results = run_screen(universe, screen_ticker)
+    save_cache()
+    make_report(results, len(universe), started)
 
 
 if __name__ == "__main__":
