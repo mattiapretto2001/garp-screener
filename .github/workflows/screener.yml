@@ -2,15 +2,14 @@ name: GARP Daily Screener
 
 on:
   schedule:
-    # 20:05 UTC lun-ven = 22:05 ora italiana (estate) / 21:05 (inverno),
-    # dopo la chiusura di Wall Street (20:00 UTC in estate).
-    # Nota: GitHub può ritardare i cron di 5-15 minuti.
+    # 20:05 UTC lun-ven = 22:05 ora italiana (estate) / 21:05 (inverno)
     - cron: "5 20 * * 1-5"
   workflow_dispatch: {}
   push:
     branches: [main]
     paths-ignore:
-      - "results/**"   # i commit dei risultati non ri-avviano lo screening
+      - "results/**"
+      - "results-moonshot/**"
 
 permissions:
   contents: write
@@ -20,9 +19,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  screen:
+  # 8 job paralleli, ognuno su un server con IP diverso: aggira i limiti
+  # di frequenza di Yahoo Finance sull'universo completo (~7.400 titoli)
+  shard:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,16 +40,63 @@ jobs:
       - name: Install dependencies
         run: pip install --quiet yfinance pandas lxml
 
-      - name: Run GARP screener
+      - name: Run GARP screener (shard)
+        env:
+          SHARD: ${{ matrix.shard }}
+          SHARDS: "8"
         run: python garp_screener.py
 
-      - name: Run Moonshot screener
+      - name: Run Moonshot screener (shard)
+        env:
+          SHARD: ${{ matrix.shard }}
+          SHARDS: "8"
+        run: python moonshot_screener.py
+
+      - name: Upload partial results
+        uses: actions/upload-artifact@v4
+        with:
+          name: partials-${{ matrix.shard }}
+          path: partials/
+          retention-days: 2
+
+  merge:
+    needs: shard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install --quiet yfinance pandas lxml
+
+      - name: Download partial results
+        uses: actions/download-artifact@v4
+        with:
+          path: partials
+          pattern: partials-*
+          merge-multiple: true
+
+      - name: Merge GARP results
+        env:
+          MODE: merge
+        run: python garp_screener.py
+
+      - name: Merge Moonshot results
+        env:
+          MODE: merge
         run: python moonshot_screener.py
 
       - name: Commit results
         run: |
           git config user.name "garp-bot"
           git config user.email "actions@github.com"
+          git pull --rebase origin main || true
           git add results/ results-moonshot/
           git diff --cached --quiet || git commit -m "Screening GARP+Moonshot $(date -u +%F)"
           git push
