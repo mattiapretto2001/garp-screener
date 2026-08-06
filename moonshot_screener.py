@@ -235,16 +235,7 @@ def screen_ticker(symbol, index_name):
         return {"ticker": symbol, "index": index_name, "error": str(e), "passed": False}
 
 
-def main():
-    started = datetime.now(timezone.utc)
-    print("Costruzione universo (condiviso con lo screener GARP)…")
-    universe = base.build_universe()
-    print(f"Universo totale: {len(universe)} ticker unici")
-    if len(universe) < 200:
-        print("ERRORE: universo troppo piccolo, interrompo.", file=sys.stderr)
-        sys.exit(1)
-
-    results = base.run_screen(universe, screen_ticker, workers=MAX_WORKERS)
+def make_report(results, universe_size, started):
     errors = sum(1 for r in results if r.get("error"))
 
     passed = sorted(
@@ -270,7 +261,7 @@ def main():
         "generated_at_utc": started.isoformat(),
         "duration_seconds": round((datetime.now(timezone.utc) - started).total_seconds()),
         "criteria": CRITERIA,
-        "universe_size": len(universe),
+        "universe_size": universe_size,
         "analyzed": len(results),
         "errors": errors,
         "passed_count": len(passed),
@@ -291,7 +282,7 @@ def main():
     lines = [
         f"# Screening Moonshot — {today}",
         "",
-        f"Universo: {len(universe)} | Candidate: **{len(passed)}** | Nuove oggi: **{len(new_today)}** | Uscite: {len(dropped)}",
+        f"Universo: {universe_size} | Candidate: **{len(passed)}** | Nuove oggi: **{len(new_today)}** | Uscite: {len(dropped)}",
         "",
         "| Ticker | Nome | Score | Ricavi q/q | Margine lordo | % dal max 52w | FCF+ | Accel. | Nuovo |",
         "|---|---|---|---|---|---|---|---|---|",
@@ -311,6 +302,51 @@ def main():
         f.write("\n".join(lines) + "\n")
 
     print(f"\nCompletato: {len(passed)} candidate moonshot ({len(new_today)} nuove). Errori: {errors}.")
+
+
+def main():
+    """Stesse tre modalità dello screener GARP: SHARD (job parallelo),
+    MODE=merge (unione parziali e report), oppure run completo locale."""
+    started = datetime.now(timezone.utc)
+    mode = os.environ.get("MODE", "").strip().lower()
+    shard_env = os.environ.get("SHARD", "").strip()
+
+    if mode == "merge":
+        results, usize = base.load_partials("moon")
+        make_report(results, usize, started)
+        return
+
+    if shard_env != "":
+        shard = int(shard_env)
+        shards = int(os.environ.get("SHARDS", "8"))
+        # Riusa la fetta di universo del GARP nello stesso job (evita che una
+        # fonte indisponibile sposti i confini delle fette tra i due screener)
+        garp_partial = os.path.join("partials", f"garp-{shard}.json")
+        universe_size = None
+        try:
+            with open(garp_partial) as f:
+                gp = json.load(f)
+            sub = {r["ticker"]: r.get("index", "?") for r in gp["results"]}
+            universe_size = int(gp.get("universe_size", 0))
+            print(f"Fetta di universo ripresa dal GARP: {len(sub)} ticker")
+        except Exception:
+            universe = base.load_universe_checked()
+            universe_size = len(universe)
+            sub = base.shard_of(universe, shard, shards)
+        print(f"Job parallelo {shard+1}/{shards}: {len(sub)} ticker "
+              f"(cache GARP: {len(INFO_CACHE)})")
+        results = base.run_screen(sub, screen_ticker, workers=MAX_WORKERS)
+        os.makedirs("partials", exist_ok=True)
+        with open(os.path.join("partials", f"moon-{shard}.json"), "w") as f:
+            json.dump({"universe_size": universe_size, "results": results},
+                      f, default=str)
+        errors = sum(1 for r in results if r.get("error"))
+        print(f"Shard completato: {len(results)} risultati, {errors} errori")
+        return
+
+    universe = base.load_universe_checked()
+    results = base.run_screen(universe, screen_ticker, workers=MAX_WORKERS)
+    make_report(results, len(universe), started)
 
 
 if __name__ == "__main__":
