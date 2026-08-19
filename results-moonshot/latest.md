@@ -1,46 +1,46 @@
-# Screening Moonshot — 2026-08-18
+# Screening Moonshot — 2026-08-19
 
-Universo: 7394 | Candidate: **55** | Nuove oggi: **5** | Uscite: 9
+Universo: 7395 | Candidate: **58** | Nuove oggi: **8** | Uscite: 5
 
 | Ticker | Nome | Score | Ricavi q/q | Margine lordo | % dal max 52w | FCF+ | Accel. | Nuovo |
 |---|---|---|---|---|---|---|---|---|
-| CDNA | CareDx, Inc. | 7 | 52% | 71% | 93% | ✓ | ✓ |  |
-| ZETA | Zeta Global Holdings Corp. | 7 | 44% | 59% | 94% | ✓ | ✓ | 🆕 |
-| IESC | IES Holdings, Inc. | 7 | 40% | 26% | 90% | ✓ | ✓ | 🆕 |
-| GLBE | Global-E Online Ltd. | 7 | 39% | 45% | 94% | ✓ | ✓ |  |
-| GENC | Gencor Industries, Inc. | 7 | 25% | 29% | 95% | ✓ | ✓ |  |
-| ETON | Eton Pharmaceuticals, Inc. | 6 | 99% | 61% | 100% | ✓ | ✓ |  |
-| HTFL | Heartflow, Inc. | 6 | 48% | 80% | 100% | – | ✓ |  |
-| COHU | Cohu, Inc. | 6 | 38% | 44% | 79% | ✓ | ✓ |  |
-| LGND | Ligand Pharmaceuticals Incorpo | 6 | 34% | 81% | 88% | ✓ | ✓ |  |
-| FIVE | Five Below, Inc. | 6 | 32% | 37% | 95% | ✓ | ✓ |  |
-| LEGH | Legacy Housing Corporation | 6 | 32% | 49% | 90% | ✓ | ✓ |  |
-| CORT | Corcept Therapeutics Incorpora | 6 | 32% | 98% | 97% | ✓ | ✓ |  |
-| HRMY | Harmony Biosciences Holdings,  | 6 | 30% | 75% | 95% | ✓ | ✓ |  |
-| AEIS | Advanced Energy Industries, In | 6 | 30% | 40% | 79% | ✓ | ✓ |  |
-| MLI | Mueller Industries, Inc. | 6 | 26% | 29% | 91% | ✓ | ✓ |  |
-| BELFA | Bel Fuse Inc. | 6 | 25% | 40% | 79% | ✓ | ✓ |  |
-| BELFB | Bel Fuse Inc. | 6 | 25% | 40% | 82% | ✓ | ✓ |  |
-| LQDA | Liquidia Corporation | 5 | 1843% | 93% | 79% | ✓ | ✓ |  |
-| ARWR | Arrowhead Pharmaceuticals, Inc | 5 | 171% | 100% | 92% | – | ✓ |  |
-| DSP | Viant Technology Inc. | 5 | 34% | 45% | 87% | ✓ | ✓ |  |
-| SUPN | Supernus Pharmaceuticals, Inc. | 5 | 32% | 73% | 82% | ✓ | ✓ | 🆕 |
-| BRZE | Braze, Inc. | 5 | 30% | 66% | 78% | ✓ | ✓ |  |
-| FLYW | Flywire Corporation | 5 | 27% | 60% | 96% | ✓ | – |  |
-| PLPC | Preformed Line Products Compan | 5 | 25% | 31% | 88% | ✓ | ✓ |  |
-| RYTM | Rhythm Pharmaceuticals, Inc. | 4 | 47% | 89% | 94% | – | – |  |
-| PTGX | Protagonist Therapeutics, Inc. | 3 | 3749% | 100% | 98% | ✓ | – |  |
-| APMD | Apnimed, Inc. | 3 | 2609% | 94% | 90% | – | – |  |
-| ALMR | Alamar Biosciences, Inc. | 3 | 82% | 59% | 86% | – | – |  |
-| MDGL | Madrigal Pharmaceuticals, Inc. | 3 | 71% | 91% | 85% | – | – |  |
-| ASC | Ardmore Shipping Corporation | 3 | 61% | 45% | 90% | – | ✓ |  |
-| CRON | Cronos Group Inc. | 3 | 58% | 43% | 94% | ✓ | – |  |
-| KNSA | Kiniksa Pharmaceuticals Intern | 3 | 55% | 55% | 96% | ✓ | – |  |
+| BELFA | Bel Fuse Inc. | 5 | 25% | 40% | 75% | ✓ | ✓ |  |
+| MGTX | MeiraGTx Holdings plc | 3 | 8609% | 98% | 98% | ✓ | – | 🆕 |
+| PTGX | Protagonist Therapeutics, Inc. | 3 | 3749% | 100% | 96% | ✓ | – |  |
+| CRON | Cronos Group Inc. | 3 | 58% | 43% | 96% | ✓ | – |  |
+| KNSA | Kiniksa Pharmaceuticals Intern | 3 | 55% | 55% | 97% | ✓ | – |  |
 | HNGE | Hinge Health, Inc. | 3 | 53% | 85% | 95% | ✓ | – |  |
-| GKOS | Glaukos Corporation | 3 | 50% | 79% | 97% | ✓ | – |  |
-| IDR.MC | Indra Sistemas, S.A. | 3 | 45% | 26% | 95% | ✓ | – |  |
+| CDNA | CareDx, Inc. | 3 | 52% | 71% | 93% | ✓ | – |  |
+| GKOS | Glaukos Corporation | 3 | 50% | 79% | 100% | ✓ | – |  |
+| IDR.MC | Indra Sistemas, S.A. | 3 | 45% | 26% | 93% | ✓ | – |  |
+| OMDA | Omada Health, Inc. | 3 | 43% | 68% | 91% | ✓ | – |  |
 | NAVN | Navan, Inc. | 3 | 40% | 72% | 97% | ✓ | – |  |
-| DAVE | Dave Inc. | 3 | 30% | 72% | 73% | ✓ | – |  |
+| BFLY | Butterfly Network, Inc. | 3 | 40% | 68% | 91% | ✓ | – |  |
+| GLBE | Global-E Online Ltd. | 3 | 39% | 45% | 94% | ✓ | – |  |
+| LEGH | Legacy Housing Corporation | 3 | 32% | 49% | 91% | ✓ | – |  |
+| CORT | Corcept Therapeutics Incorpora | 3 | 32% | 98% | 97% | ✓ | – |  |
+| HRMY | Harmony Biosciences Holdings,  | 3 | 30% | 75% | 98% | ✓ | – |  |
 | FROG | JFrog Ltd. | 3 | 29% | 78% | 92% | ✓ | – |  |
-| CHYM | Chime Financial, Inc. | 3 | 27% | 89% | 96% | ✓ | – |  |
-| TGTX | TG Therapeutics, Inc. | 2 | 70% | 82% | 85% | ✓ | – |  |
+| FLYW | Flywire Corporation | 3 | 27% | 60% | 98% | ✓ | – |  |
+| CHYM | Chime Financial, Inc. | 3 | 27% | 89% | 99% | ✓ | – |  |
+| GENC | Gencor Industries, Inc. | 3 | 25% | 29% | 95% | ✓ | – |  |
+| APMD | Apnimed, Inc. | 2 | 2609% | 94% | 91% | – | – |  |
+| LQDA | Liquidia Corporation | 2 | 1843% | 93% | 80% | ✓ | – |  |
+| ARWR | Arrowhead Pharmaceuticals, Inc | 2 | 171% | 100% | 94% | – | – |  |
+| ETON | Eton Pharmaceuticals, Inc. | 2 | 99% | 61% | 96% | ✓ | – |  |
+| ALMR | Alamar Biosciences, Inc. | 2 | 82% | 59% | 92% | – | – |  |
+| TARS | Tarsus Pharmaceuticals, Inc. | 2 | 69% | 83% | 86% | ✓ | – |  |
+| ASC | Ardmore Shipping Corporation | 2 | 61% | 45% | 92% | – | – |  |
+| ARQT | Arcutis Biotherapeutics, Inc. | 2 | 59% | 91% | 83% | ✓ | – | 🆕 |
+| DLO | DLocal Limited | 2 | 56% | 34% | 85% | ✓ | – |  |
+| HLIT | Harmonic Inc. | 2 | 54% | 50% | 71% | ✓ | – | 🆕 |
+| HTFL | Heartflow, Inc. | 2 | 48% | 80% | 96% | – | – |  |
+| ATAT | Atour Lifestyle Holdings Limit | 2 | 48% | 44% | 86% | ✓ | – | 🆕 |
+| RYTM | Rhythm Pharmaceuticals, Inc. | 2 | 47% | 89% | 95% | – | – |  |
+| RSI | Rush Street Interactive, Inc. | 2 | 46% | 35% | 74% | ✓ | – | 🆕 |
+| IESC | IES Holdings, Inc. | 2 | 40% | 26% | 85% | ✓ | – |  |
+| COHU | Cohu, Inc. | 2 | 38% | 44% | 74% | ✓ | – |  |
+| DSP | Viant Technology Inc. | 2 | 34% | 45% | 85% | ✓ | – |  |
+| LGND | Ligand Pharmaceuticals Incorpo | 2 | 34% | 81% | 89% | ✓ | – |  |
+| FIVE | Five Below, Inc. | 2 | 32% | 37% | 96% | ✓ | – |  |
+| CBLL | CeriBell, Inc. | 2 | 32% | 89% | 98% | – | – |  |
