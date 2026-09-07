@@ -1,6 +1,6 @@
-# Screening GARP — 2026-09-04
+# Screening GARP — 2026-09-07
 
-Universo: 7390 titoli | Superano tutti i filtri: **54** | Nuovi oggi: **1** | Usciti: 1
+Universo: 7390 titoli | Superano tutti i filtri: **58** | Nuovi oggi: **7** | Usciti: 3
 
 | Ticker | Nome | Indice | Settore | PEG | ROE | D/E | Ricavi q/q | EPS q/q | CAGR ricavi | Nuovo |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -11,52 +11,56 @@ Universo: 7390 titoli | Superano tutti i filtri: **54** | Nuovi oggi: **1** | Us
 | AUPH | Aurinia Pharmaceuticals Inc. | USA (altre quotate) | Healthcare | 0.09 | 66.1% | 0.10 | 18.9% | 73.9% | 28.3% |  |
 | PAYS | Paysign, Inc. | USA (altre quotate) | Technology | 0.11 | 30.8% | 0.09 | 48.1% | 386.9% | 29.2% |  |
 | RAMP | LiveRamp Holdings, Inc. | USA (altre quotate) | Technology | 0.12 | 16.1% | 0.03 | 9.8% | 126.1% | 10.9% |  |
-| PDEX | Pro-Dex, Inc. | USA (altre quotate) | Healthcare | 0.12 | 32.4% | 0.38 | 16.6% | 138.7% | 16.6% |  |
+| PDEX | Pro-Dex, Inc. | USA (altre quotate) | Healthcare | 0.12 | 32.4% | 0.40 | 16.6% | 138.7% | 16.6% |  |
 | GLBE | Global-E Online Ltd. | USA (altre quotate) | Consumer Cyclical | 0.12 | 17.0% | 0.03 | 39.1% | 354.9% | 33.0% |  |
 | HRMY | Harmony Biosciences Holdings, Inc. | USA (altre quotate) | Healthcare | 0.16 | 20.5% | 0.16 | 30.3% | 89.6% | 25.6% |  |
 | IA | Innovative Aerosystems, Inc. | USA (altre quotate) | Industrials | 0.22 | 28.5% | 0.70 | 10.7% | 83.7% | 44.8% |  |
 | EVER | EverQuote, Inc. | USA (altre quotate) | Communication Services | 0.23 | 53.6% | 0.01 | 24.6% | 30.5% | 19.7% |  |
-| SKHY | SK hynix Inc. | USA (altre quotate) | Technology | 0.24 | 92.7% | 0.08 | 256.8% | 1240.8% | 29.6% |  |
+| SKHY | SK hynix Inc. | USA (altre quotate) | Technology | 0.24 | 354.1% | 0.72 | 256.8% | 1240.8% | 29.6% |  |
 | COCO | The Vita Coco Company, Inc. | USA (altre quotate) | Consumer Defensive | 0.26 | 31.4% | 0.04 | 28.1% | 115.9% | 12.5% |  |
-| IESC | IES Holdings, Inc. | USA (altre quotate) | Industrials | 0.28 | 44.5% | 0.06 | 39.6% | 98.1% | 15.9% |  |
-| G24.DE | Scout24 SE | DAX | Communication Services | 0.29 | 22.8% | 0.59 | 20.0% | 61.9% | 13.2% |  |
-| EME | EMCOR Group, Inc. | S&P 500 | Industrials | 0.30 | 40.3% | 0.13 | 19.8% | 33.6% | 15.3% |  |
+| G24.DE | Scout24 SE | DAX | Communication Services | 0.28 | 22.8% | 0.59 | 20.0% | 61.9% | 13.2% |  |
+| IESC | IES Holdings, Inc. | USA (altre quotate) | Industrials | 0.29 | 44.5% | 0.06 | 39.6% | 98.1% | 15.9% |  |
+| EME | EMCOR Group, Inc. | S&P 500 | Industrials | 0.31 | 40.3% | 0.13 | 19.8% | 33.6% | 15.3% |  |
+| NBIX | Neurocrine Biosciences, Inc. | USA (altre quotate) | Healthcare | 0.32 | 22.1% | 0.12 | 39.5% | 34.3% | 24.3% |  |
+| YOU | Clear Secure, Inc. | USA (altre quotate) | Technology | 0.34 | 119.2% | 0.45 | 26.6% | 102.5% | 27.2% | 🆕 |
 | PGNY | Progyny, Inc. | USA (altre quotate) | Healthcare | 0.36 | 16.2% | 0.05 | 5.3% | 63.9% | 17.9% |  |
+| WLDN | Willdan Group, Inc. | USA (altre quotate) | Industrials | 0.38 | 21.2% | 0.25 | 33.2% | 57.7% | 16.7% | 🆕 |
 | ECG | Everus Construction Group, Inc. | USA (altre quotate) | Industrials | 0.40 | 39.5% | 0.47 | 33.7% | 58.8% | 11.5% |  |
+| AVGO | Broadcom Inc. | S&P 500 | Technology | 0.40 | 44.2% | 0.60 | 85.5% | 216.1% | 24.4% |  |
 | INOD | Innodata Inc. | USA (altre quotate) | Technology | 0.41 | 37.8% | 0.02 | 57.8% | 99.6% | 47.1% |  |
 | ESOA | Energy Services of America Corpora | USA (altre quotate) | Industrials | 0.42 | 15.1% | 0.58 | 25.5% | 57.9% | 27.6% |  |
-| AVGO | Broadcom Inc. | S&P 500 | Technology | 0.42 | 44.2% | 0.60 | 85.5% | 216.1% | 24.4% |  |
 | CLS | Celestica Inc. | USA (altre quotate) | Technology | 0.44 | 52.7% | 0.40 | 62.4% | 74.8% | 19.6% |  |
 | ELMD | Electromed, Inc. | USA (altre quotate) | Healthcare | 0.44 | 23.3% | 0.00 | 11.6% | 54.3% | 15.3% |  |
 | GCT | GigaCloud Technology Inc. | USA (altre quotate) | Technology | 0.44 | 32.3% | 0.95 | 27.6% | 22.5% | 38.1% |  |
-| NBIX | Neurocrine Biosciences, Inc. | USA (altre quotate) | Healthcare | 0.46 | 22.1% | 0.12 | 39.5% | 34.3% | 24.3% |  |
-| AFYA | Afya Limited | USA (altre quotate) | Consumer Defensive | 0.50 | 16.7% | 0.63 | 5.7% | 14.4% | 16.6% |  |
+| AFYA | Afya Limited | USA (altre quotate) | Consumer Defensive | 0.49 | 16.7% | 0.63 | 5.7% | 14.4% | 16.6% |  |
 | MTSI | MACOM Technology Solutions Holding | USA (altre quotate) | Technology | 0.51 | 17.2% | 0.27 | 35.8% | 175.7% | 12.7% |  |
 | ATAT | Atour Lifestyle Holdings Limited | USA (altre quotate) | Consumer Cyclical | 0.51 | 59.1% | 0.39 | 41.4% | 29.1% | 62.9% |  |
-| ENR.DE | Siemens Energy AG | DAX | Industrials | 0.52 | 27.7% | 0.26 | 17.5% | 76.1% | 10.4% |  |
+| ENR.DE | Siemens Energy AG | DAX | Industrials | 0.54 | 27.7% | 0.26 | 17.5% | 76.1% | 10.4% |  |
 | AMSC | American Superconductor Corporatio | USA (altre quotate) | Industrials | 0.55 | 30.2% | 0.01 | 30.0% | 41.1% | 41.3% |  |
 | STRL | Sterling Infrastructure, Inc. | USA (altre quotate) | Industrials | 0.56 | 40.0% | 0.24 | 90.1% | 119.5% | 12.1% |  |
-| NVDA | NVIDIA Corporation | S&P 500 | Technology | 0.57 | 117.2% | 0.17 | 105.9% | 125.9% | 100.0% |  |
 | CRMD | CorMedix Inc. | USA (altre quotate) | Healthcare | 0.58 | 54.9% | 0.32 | 156.5% | 31.1% | 1581.7% |  |
+| NVDA | NVIDIA Corporation | S&P 500 | Technology | 0.58 | 117.2% | 0.17 | 105.9% | 125.9% | 100.0% |  |
+| CRDO | Credo Technology Group Holding Ltd | USA (altre quotate) | Technology | 0.62 | 30.7% | 0.01 | 114.7% | 104.1% | 93.5% | 🆕 |
 | BOOT | Boot Barn Holdings, Inc. | USA (altre quotate) | Consumer Cyclical | 0.62 | 19.2% | 0.59 | 17.7% | 31.3% | 10.8% |  |
-| AGX | Argan, Inc. | USA (altre quotate) | Industrials | 0.66 | 39.8% | 0.02 | 61.5% | 51.1% | 27.6% |  |
-| BSX | Boston Scientific Corporation | S&P 500 | Healthcare | 0.67 | 15.3% | 0.50 | 7.5% | 13.8% | 16.5% |  |
+| BSX | Boston Scientific Corporation | S&P 500 | Healthcare | 0.65 | 15.3% | 0.50 | 7.5% | 13.8% | 16.5% |  |
+| AGX | Argan, Inc. | USA (altre quotate) | Industrials | 0.65 | 39.8% | 0.02 | 61.5% | 51.1% | 27.6% |  |
+| PATH | UiPath, Inc. | USA (altre quotate) | Technology | 0.65 | 20.0% | 0.04 | 13.4% | 2178.3% | 15.0% | 🆕 |
 | PAY | Paymentus Holdings, Inc. | USA (altre quotate) | Technology | 0.67 | 15.0% | 0.02 | 28.8% | 73.8% | 34.0% |  |
-| 0175.HK | Geely Automobile Holdings Limited | Hang Seng | Consumer Cyclical | 0.71 | 17.4% | 0.14 | 13.9% | 37.4% | 32.6% |  |
 | EXEL | Exelixis, Inc. | USA (altre quotate) | Healthcare | 0.71 | 44.4% | 0.09 | 10.6% | 14.7% | 12.9% |  |
-| RDDT | Reddit, Inc. | S&P 500 | Communication Services | 0.72 | 30.7% | 0.01 | 61.1% | 183.2% | 48.9% |  |
-| WDAY | Workday, Inc. | S&P 500 | Technology | 0.73 | 16.0% | 0.58 | 12.8% | 177.2% | 15.4% |  |
+| 0175.HK | Geely Automobile Holdings Limited | Hang Seng | Consumer Cyclical | 0.71 | 17.4% | 0.14 | 13.9% | 37.4% | 32.6% |  |
 | RDVT | Red Violet, Inc. | USA (altre quotate) | Technology | 0.75 | 15.8% | 0.02 | 22.7% | 84.7% | 19.2% |  |
-| CI | The Cigna Group | S&P 500 | Healthcare | 0.77 | 16.8% | 0.74 | 6.7% | 8.4% | 15.1% |  |
+| RDDT | Reddit, Inc. | S&P 500 | Communication Services | 0.78 | 30.7% | 0.01 | 61.1% | 183.2% | 48.9% |  |
+| CI | The Cigna Group | S&P 500 | Healthcare | 0.78 | 16.8% | 0.74 | 6.7% | 8.4% | 15.1% |  |
+| TSM | Taiwan Semiconductor Manufacturing | USA (altre quotate) | Technology | 0.79 | 40.0% | 0.17 | 36.0% | 77.4% | 18.9% | 🆕 |
 | DLO | DLocal Limited | USA (altre quotate) | Technology | 0.80 | 41.3% | 0.12 | 55.8% | 27.6% | 37.7% |  |
-| ALAB | Astera Labs, Inc. | USA (altre quotate) | Technology | 0.82 | 25.8% | 0.03 | 104.5% | 198.9% | 120.1% |  |
-| GOOG | Alphabet Inc. | S&P 500 | Communication Services | 0.92 | 48.7% | 0.19 | 24.2% | 297.9% | 12.5% | 🆕 |
-| MPWR | Monolithic Power Systems, Inc. | S&P 500 | Technology | 0.92 | 22.0% | 0.00 | 47.6% | 90.6% | 15.9% |  |
+| ALAB | Astera Labs, Inc. | USA (altre quotate) | Technology | 0.83 | 25.8% | 0.03 | 104.5% | 198.9% | 120.1% |  |
+| WDC | Western Digital Corporation | S&P 500 | Technology | 0.84 | 130.9% | 0.13 | 43.8% | 1033.0% | 27.3% | 🆕 |
+| MPWR | Monolithic Power Systems, Inc. | S&P 500 | Technology | 0.91 | 22.0% | 0.00 | 47.6% | 90.6% | 15.9% |  |
 | LIVN | LivaNova PLC | USA (altre quotate) | Healthcare | 0.93 | 15.4% | 0.27 | 10.8% | 299.7% | 10.7% |  |
-| NVT | nVent Electric plc | USA (altre quotate) | Industrials | 0.93 | 15.7% | 0.41 | 52.8% | 97.2% | 19.3% |  |
+| CVSA | Covista Inc. | USA (altre quotate) | Consumer Defensive | 0.94 | 18.6% | 0.63 | 9.7% | 32.3% | 10.4% |  |
 | ACAD | ACADIA Pharmaceuticals Inc. | USA (altre quotate) | Healthcare | 0.94 | 35.7% | 0.06 | 16.4% | 18.1% | 27.5% |  |
-| CRS | Carpenter Technology Corporation | USA (altre quotate) | Industrials | 0.97 | 25.8% | 0.33 | 12.6% | 45.4% | 16.1% |  |
-| CVSA | Covista Inc. | USA (altre quotate) | Consumer Defensive | 0.98 | 18.6% | 0.63 | 9.7% | 32.3% | 10.4% |  |
-| FIVE | Five Below, Inc. | USA (altre quotate) | Consumer Cyclical | 0.98 | 21.1% | 0.86 | 32.5% | 199.1% | 15.7% |  |
+| NVT | nVent Electric plc | USA (altre quotate) | Industrials | 0.96 | 15.7% | 0.41 | 52.8% | 97.2% | 19.3% |  |
+| FIVE | Five Below, Inc. | USA (altre quotate) | Consumer Cyclical | 0.98 | 28.3% | 0.82 | 22.9% | 417.7% | 15.7% |  |
+| LAUR | Laureate Education, Inc. | USA (altre quotate) | Consumer Defensive | 1.00 | 29.3% | 0.64 | 17.5% | 44.2% | 11.1% | 🆕 |
 
-Usciti dalla lista rispetto al run precedente: YOU
+Usciti dalla lista rispetto al run precedente: CRS, GOOG, WDAY
