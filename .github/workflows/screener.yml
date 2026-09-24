@@ -10,6 +10,7 @@ on:
     paths-ignore:
       - "results/**"
       - "results-moonshot/**"
+      - "results-temi/**"
 
 permissions:
   contents: write
@@ -52,6 +53,14 @@ jobs:
           SHARDS: "8"
         run: python moonshot_screener.py
 
+      # Temi strutturali: scoperta dalla cache .info del GARP (nessuna chiamata
+      # di rete). Se fallisce non deve bloccare GARP e Moonshot.
+      - name: Discover thematic tickers (shard)
+        continue-on-error: true
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: python temi_screener.py
+
       - name: Upload partial results
         uses: actions/upload-artifact@v4
         with:
@@ -62,7 +71,7 @@ jobs:
   merge:
     needs: shard
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -92,11 +101,18 @@ jobs:
           MODE: merge
         run: python moonshot_screener.py
 
+      - name: Merge thematic monitor
+        continue-on-error: true
+        timeout-minutes: 12
+        env:
+          MODE: merge
+        run: python temi_screener.py
+
       - name: Commit results
         run: |
           git config user.name "garp-bot"
           git config user.email "actions@github.com"
           git pull --rebase origin main || true
-          git add results/ results-moonshot/
-          git diff --cached --quiet || git commit -m "Screening GARP+Moonshot $(date -u +%F)"
+          git add results/ results-moonshot/ results-temi/
+          git diff --cached --quiet || git commit -m "Screening GARP+Moonshot+Temi $(date -u +%F)"
           git push
