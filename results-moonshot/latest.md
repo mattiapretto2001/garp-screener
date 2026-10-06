@@ -1,46 +1,46 @@
 # Screening Moonshot — 2026-10-06
 
-Universo: 7394 | Candidate: **48** | Nuove oggi: **3** | Uscite: 1
+Universo: 7393 | Candidate: **50** | Nuove oggi: **5** | Uscite: 3
 
 | Ticker | Nome | Score | Ricavi q/q | Margine lordo | % dal max 52w | FCF+ | Accel. | Nuovo |
 |---|---|---|---|---|---|---|---|---|
-| IDR.MC | Indra Sistemas, S.A. | 7 | 45% | 26% | 90% | ✓ | ✓ |  |
-| CDNA | CareDx, Inc. | 6 | 52% | 71% | 99% | ✓ | ✓ |  |
-| KLIC | Kulicke and Soffa Industries,  | 5 | 123% | 53% | 73% | ✓ | ✓ |  |
-| ETON | Eton Pharmaceuticals, Inc. | 5 | 99% | 61% | 84% | ✓ | ✓ |  |
-| TAL | TAL Education Group | 5 | 32% | 56% | 92% | ✓ | – |  |
-| HRMY | Harmony Biosciences Holdings,  | 5 | 30% | 75% | 92% | ✓ | ✓ |  |
-| INTT | InTest Corporation | 4 | 26% | 43% | 75% | ✓ | ✓ | 🆕 |
-| TGTX | TG Therapeutics, Inc. | 3 | 70% | 82% | 91% | ✓ | – |  |
-| CRON | Cronos Group Inc. | 3 | 58% | 43% | 90% | ✓ | – |  |
-| KNSA | Kiniksa Pharmaceuticals Intern | 3 | 55% | 55% | 92% | ✓ | – |  |
-| HNGE | Hinge Health, Inc. | 3 | 53% | 85% | 99% | ✓ | – |  |
-| CAI | Caris Life Sciences, Inc. | 3 | 45% | 70% | 90% | ✓ | – |  |
-| BFLY | Butterfly Network, Inc. | 3 | 40% | 68% | 93% | ✓ | – |  |
-| GLBE | Global-E Online Ltd. | 3 | 39% | 45% | 90% | ✓ | – |  |
+| CRON | Cronos Group Inc. | 3 | 58% | 43% | 91% | ✓ | – |  |
+| KNSA | Kiniksa Pharmaceuticals Intern | 3 | 55% | 55% | 93% | ✓ | – |  |
+| HNGE | Hinge Health, Inc. | 3 | 53% | 85% | 98% | ✓ | – |  |
+| IDR.MC | Indra Sistemas, S.A. | 3 | 45% | 26% | 90% | ✓ | – |  |
 | COHU | Cohu, Inc. | 3 | 38% | 44% | 97% | ✓ | – |  |
-| LGND | Ligand Pharmaceuticals Incorpo | 3 | 34% | 81% | 94% | ✓ | – |  |
-| LEGH | Legacy Housing Corporation | 3 | 32% | 49% | 93% | ✓ | – |  |
-| FORM | FormFactor, Inc. | 3 | 32% | 46% | 92% | ✓ | – |  |
-| CORT | Corcept Therapeutics Incorpora | 3 | 32% | 98% | 97% | ✓ | – |  |
-| DAVE | Dave Inc. | 3 | 30% | 72% | 81% | ✓ | – |  |
+| LGND | Ligand Pharmaceuticals Incorpo | 3 | 34% | 81% | 91% | ✓ | – |  |
+| LEGH | Legacy Housing Corporation | 3 | 32% | 49% | 92% | ✓ | – |  |
+| TAL | TAL Education Group | 3 | 32% | 56% | 94% | ✓ | – |  |
+| CORT | Corcept Therapeutics Incorpora | 3 | 32% | 98% | 95% | ✓ | – |  |
+| HRMY | Harmony Biosciences Holdings,  | 3 | 30% | 75% | 91% | ✓ | – |  |
 | FROG | JFrog Ltd. | 3 | 29% | 78% | 93% | ✓ | – |  |
 | FLYW | Flywire Corporation | 3 | 27% | 60% | 92% | ✓ | – |  |
-| AOUT | American Outdoor Brands, Inc. | 3 | 25% | 46% | 94% | ✓ | – |  |
-| MGTX | MeiraGTx Holdings plc | 2 | 8609% | 98% | 71% | ✓ | – |  |
-| PTGX | Protagonist Therapeutics, Inc. | 2 | 3749% | 100% | 87% | ✓ | – |  |
-| ALMR | Alamar Biosciences, Inc. | 2 | 82% | 59% | 99% | – | – |  |
-| BLLN | BillionToOne, Inc. | 2 | 64% | 71% | 72% | ✓ | – |  |
-| ASC | Ardmore Shipping Corporation | 2 | 61% | 45% | 97% | – | – |  |
-| KMTS | Kestra Medical Technologies, L | 2 | 60% | 54% | 94% | – | – |  |
+| AOUT | American Outdoor Brands, Inc. | 3 | 25% | 46% | 91% | ✓ | – |  |
+| PTGX | Protagonist Therapeutics, Inc. | 2 | 3749% | 100% | 86% | ✓ | – |  |
+| KLIC | Kulicke and Soffa Industries,  | 2 | 123% | 53% | 72% | ✓ | – |  |
+| TARS | Tarsus Pharmaceuticals, Inc. | 2 | 69% | 83% | 81% | ✓ | – | 🆕 |
+| ASC | Ardmore Shipping Corporation | 2 | 61% | 45% | 94% | – | – |  |
+| KMTS | Kestra Medical Technologies, L | 2 | 60% | 54% | 90% | – | – |  |
 | DLO | DLocal Limited | 2 | 56% | 34% | 87% | ✓ | – |  |
-| GKOS | Glaukos Corporation | 2 | 50% | 79% | 86% | ✓ | – |  |
-| HTFL | Heartflow, Inc. | 2 | 48% | 80% | 98% | – | – |  |
-| OMDA | Omada Health, Inc. | 2 | 43% | 68% | 78% | ✓ | – |  |
-| IESC | IES Holdings, Inc. | 2 | 40% | 26% | 83% | ✓ | – |  |
-| NAVN | Navan, Inc. | 2 | 35% | 73% | 71% | ✓ | – | 🆕 |
-| DSP | Viant Technology Inc. | 2 | 34% | 45% | 82% | ✓ | – |  |
-| CBLL | CeriBell, Inc. | 2 | 32% | 89% | 97% | – | – |  |
-| NTSK | Netskope, Inc. | 2 | 29% | 70% | 74% | ✓ | – |  |
-| FIGS | FIGS, Inc. | 2 | 29% | 69% | 78% | ✓ | – |  |
-| CHYM | Chime Financial, Inc. | 2 | 27% | 89% | 80% | ✓ | – |  |
+| CDNA | CareDx, Inc. | 2 | 52% | 71% | 88% | ✓ | – |  |
+| GKOS | Glaukos Corporation | 2 | 50% | 79% | 84% | ✓ | – |  |
+| HTFL | Heartflow, Inc. | 2 | 48% | 80% | 93% | – | – |  |
+| CAI | Caris Life Sciences, Inc. | 2 | 45% | 70% | 82% | ✓ | – |  |
+| OMDA | Omada Health, Inc. | 2 | 43% | 68% | 77% | ✓ | – |  |
+| IESC | IES Holdings, Inc. | 2 | 40% | 26% | 84% | ✓ | – |  |
+| BFLY | Butterfly Network, Inc. | 2 | 40% | 68% | 85% | ✓ | – |  |
+| GLBE | Global-E Online Ltd. | 2 | 39% | 45% | 88% | ✓ | – |  |
+| DSP | Viant Technology Inc. | 2 | 34% | 45% | 81% | ✓ | – |  |
+| CBLL | CeriBell, Inc. | 2 | 32% | 89% | 95% | – | – |  |
+| FORM | FormFactor, Inc. | 2 | 32% | 46% | 88% | ✓ | – |  |
+| NTSK | Netskope, Inc. | 2 | 29% | 70% | 79% | ✓ | – |  |
+| FIGS | FIGS, Inc. | 2 | 29% | 69% | 81% | ✓ | – |  |
+| CHYM | Chime Financial, Inc. | 2 | 27% | 89% | 78% | ✓ | – |  |
+| BRZE | Braze, Inc. | 2 | 26% | 66% | 71% | ✓ | – |  |
+| BB | BlackBerry Limited | 2 | 26% | 78% | 70% | ✓ | – | 🆕 |
+| INTT | InTest Corporation | 2 | 26% | 43% | 72% | ✓ | – |  |
+| MLI | Mueller Industries, Inc. | 2 | 26% | 29% | 89% | ✓ | – |  |
+| PLPC | Preformed Line Products Compan | 2 | 25% | 31% | 84% | ✓ | – |  |
+| GENC | Gencor Industries, Inc. | 2 | 25% | 29% | 90% | ✓ | – |  |
+| BELFB | Bel Fuse Inc. | 2 | 25% | 40% | 78% | ✓ | – |  |
