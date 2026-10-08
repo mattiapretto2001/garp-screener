@@ -35,7 +35,10 @@ concorrenza) è fatta ogni sera da Claude sui nuovi ingressi.
 
 import json
 import os
+import random
 import sys
+import time
+from types import SimpleNamespace
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timezone
@@ -70,6 +73,31 @@ try:
 except Exception:
     INFO_CACHE = {}
     print("[WARN] cache dati non trovata: scarico i dati da Yahoo", file=sys.stderr)
+
+
+def _fetch_with_retry(getter, tries=3, base_delay=3.0):
+    """Legge un dato Yahoo ripetendo se torna vuoto o fallisce (rate limit):
+    lo stage 2 parte subito dopo le ~7.400 chiamate del GARP e senza retry
+    i campi pluriennali tornavano null in blocco (34 promossi su 47 l'8/10/2026)."""
+    for i in range(tries):
+        try:
+            v = getter()
+            if v is not None and not getattr(v, "empty", False):
+                return v
+        except Exception:
+            pass
+        if i < tries - 1:
+            time.sleep(base_delay * (2 ** i) + random.random())
+    return None
+
+
+def _stage2_data(tk):
+    """Scarica una volta sola, con retry, i dati annuali usati dallo stage 2."""
+    return SimpleNamespace(
+        balance_sheet=_fetch_with_retry(lambda: tk.balance_sheet),
+        income_stmt=_fetch_with_retry(lambda: tk.income_stmt),
+        eps_trend=_fetch_with_retry(lambda: tk.eps_trend),
+    )
 
 
 def _dilution_cagr(tk):
@@ -197,6 +225,9 @@ def screen_ticker(symbol, index_name):
         # (solo qui servono le chiamate di rete: pochi ticker superstiti)
         if tk is None:
             tk = yf.Ticker(symbol)
+        tk = _stage2_data(tk)
+        result["multi_year_data_ok"] = (tk.balance_sheet is not None
+                                        and tk.income_stmt is not None)
         dil = _dilution_cagr(tk)
         result["dilution_cagr"] = dil
         checks["dilution_ok"] = dil is None or dil < CRITERIA["dilution_cagr_max"]
