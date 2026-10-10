@@ -180,7 +180,6 @@ def screen_ticker(symbol, index_name):
         debt = info.get("totalDebt")
         cur_ratio = info.get("currentRatio")
         ebitda = info.get("ebitda")
-        financial = sector == "Financial Services"
 
         pct_high = (price / high52) if price and high52 else None
         runway = None
@@ -201,16 +200,15 @@ def screen_ticker(symbol, index_name):
             "mcap_ok": mcap is not None and CRITERIA["mcap_min"] <= mcap <= CRITERIA["mcap_max"],
             "revenue_scale_ok": rev_ttm is not None and rev_ttm > CRITERIA["revenue_ttm_min"],
             "hypergrowth_ok": rev_g is not None and rev_g > CRITERIA["rev_growth_min"],
-            # banche e assicurazioni non hanno un margine lordo significativo
-            "gross_margin_ok": gm_ok or financial,
+            "gross_margin_ok": gm_ok,
             "momentum_ok": (pct_high is not None and pct_high >= CRITERIA["pct_of_52w_high_min"]
                             and price is not None and ma200 is not None and price > ma200),
             "runway_ok": (fcf is None or fcf >= 0
                           or (runway is not None and runway > CRITERIA["runway_years_min"])),
             "debt_ok": debt_cash_ok or debt_ebitda_ok,
             # il current ratio conta solo per chi ha debito netto (falsato dai
-            # fondi dei clienti in pagamenti e finanziari)
-            "liquidity_ok": cur_ok or net_cash or financial,
+            # fondi dei clienti nei pagamenti)
+            "liquidity_ok": cur_ok or net_cash,
         }
 
         # Criteri introdotti il 10/10/2026: in osservazione parallela, il titolo
@@ -220,8 +218,6 @@ def screen_ticker(symbol, index_name):
             criteri_nuovi.append("universo_europa")
         if sector in base.EXCLUDED_SECTORS:
             criteri_nuovi.append("settore")
-        if not gm_ok:
-            criteri_nuovi.append("margine_finanziari")
         if not debt_cash_ok:
             criteri_nuovi.append("debito_ebitda")
         if not cur_ok:

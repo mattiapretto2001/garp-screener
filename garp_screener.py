@@ -390,6 +390,15 @@ def run_screen(universe, fn, workers=MAX_WORKERS, retries=2, pause=25):
 
 
 def load_universe_checked():
+    # Su GitHub l'universo è costruito una volta sola dal job "universe": se ogni
+    # shard lo ricostruisse, la ricerca Yahoo (Europa) può dare liste diverse e
+    # lo spartizione salta (10/10/2026: titoli doppi e altri mai analizzati)
+    path = os.environ.get("UNIVERSE_FILE", "").strip()
+    if path and os.path.exists(path):
+        with open(path) as f:
+            universe = json.load(f)
+        print(f"Universo da {path}: {len(universe)} ticker")
+        return universe
     print("Costruzione universo…")
     universe = build_universe()
     print(f"Universo totale: {len(universe)} ticker unici")
@@ -424,12 +433,17 @@ def load_partials(prefix):
     if not files:
         print(f"ERRORE: nessun file parziale {prefix}-*.json in {pdir}", file=sys.stderr)
         sys.exit(1)
-    all_results, usize = [], 0
+    by_ticker, usize = {}, 0
     for fp in files:
         with open(fp) as f:
             d = json.load(f)
-        all_results.extend(d["results"])
+        for r in d["results"]:
+            t = r.get("ticker")
+            # un ticker per volta: preferisci il risultato senza errore
+            if t not in by_ticker or (by_ticker[t].get("error") and not r.get("error")):
+                by_ticker[t] = r
         usize = max(usize, int(d.get("universe_size", 0)))
+    all_results = list(by_ticker.values())
     print(f"Uniti {len(files)} parziali {prefix}: {len(all_results)} risultati")
     return all_results, usize
 
