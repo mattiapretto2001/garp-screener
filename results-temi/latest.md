@@ -1,6 +1,6 @@
 # Temi strutturali — 2026-10-10
 
-Seguiti: 91 | Verdi: **20** | Nuovi verdi: AQ.ST, BE, CENER.BR, ERO, SCCO | Persi: ATYM.L, CMB.MI, TECK
+Seguiti: 91 | Verdi: **20** | Nuovi verdi: TECK | Persi: ANTO.L
 
 ## Nucleare, SMR e uranio
 
@@ -29,13 +29,13 @@ Seguiti: 91 | Verdi: **20** | Nuovi verdi: AQ.ST, BE, CENER.BR, ERO, SCCO | Pers
 |---|---|---|---|---|---|---|---|
 | 🟢 | SCCO · | Southern Copper Corporation | crescita | 7 | 41% | 95% | — |
 | 🟢 | GEV | GE Vernova Inc. | crescita | 6 | 22% | 84% | — |
+| 🟢 | TECK · | Teck Resources Limited | crescita | 6 | 78% | 94% | — |
 | 🟢 | NVT | nVent Electric plc | crescita | 6 | 53% | 91% | — |
 | 🟢 | AQ.ST · | AQ Group AB (publ) | stabile | 6 | 10% | 96% | — |
 | 🟢 | ERO · | Ero Copper Corp. | crescita | 6 | 74% | 92% | — |
 | 🟢 | PLPC | Preformed Line Products Comp | crescita | 6 | 25% | 79% | — |
 | 🟢 | 6501.T | Hitachi, Ltd. | crescita | 5 | 20% | 94% | — |
 | 🟢 | PWR | Quanta Services, Inc. | crescita | 5 | 41% | 90% | — |
-| 🟢 | ANTO.L · | Antofagasta plc | crescita | 5 | 18% | 84% | — |
 | 🟢 | EME | EMCOR Group, Inc. | crescita | 5 | 20% | 83% | — |
 | 🟢 | ETN | Eaton Corporation plc | crescita | 4 | 21% | 90% | — |
 | 🟢 | ABBN.SW | ABB Ltd | stabile | 4 | 14% | 89% | — |
@@ -51,9 +51,9 @@ Seguiti: 91 | Verdi: **20** | Nuovi verdi: AQ.ST, BE, CENER.BR, ERO, SCCO | Pers
 | 🟡 | ENIC · | Enel Chile S.A. | stabile | 5 | -11% | 95% | ricavi -11% |
 | 🟡 | SU.PA | Schneider Electric S.E. | stabile | 4 | 10% | 85% | — |
 | 🟡 | VRT | Vertiv Holdings Co | crescita | 4 | 24% | 64% | — |
+| 🟡 | ANTO.L · | Antofagasta plc | crescita | 4 | 18% | 84% | — |
 | 🟡 | AYI · | Acuity Inc. | stabile | 4 | 3% | 78% | — |
 | 🟡 | ATKR · | Atkore Inc. | stabile | 4 | 8% | 100% | utili -98% |
-| 🟡 | RNW · | ReNew Energy Global Plc | stabile | 4 | 14% | 88% | debito netto/EBITDA 8.0x |
 | 🟡 | AMSC | American Superconductor Corp | crescita | 4 | 30% | 43% | diluizione 17%/anno |
 | 🟡 | NEE | NextEra Energy, Inc. | stabile | 3 | 12% | 78% | debito netto/EBITDA 7.4x |
 | 🟡 | ENR.DE | Siemens Energy AG | crescita | 3 | 18% | 76% | — |
