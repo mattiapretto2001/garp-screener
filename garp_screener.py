@@ -68,6 +68,11 @@ CACHE_KEYS = [
     "trailingPegRatio", "trailingPE", "forwardPE", "earningsGrowth",
     "totalRevenue", "grossMargins", "fiftyTwoWeekHigh", "twoHundredDayAverage",
     "totalCash", "totalDebt", "currentRatio", "ebitda",
+    # dal 10/10/2026, per la fotografia settimanale dell'universo (dati che
+    # non si possono ricostruire a posteriori): sentiment e proprietà
+    "sharesOutstanding", "shortPercentOfFloat", "heldPercentInsiders",
+    "heldPercentInstitutions", "numberOfAnalystOpinions", "targetMeanPrice",
+    "recommendationMean", "forwardEps", "trailingEps", "enterpriseValue",
 ]
 
 WIKI = "https://en.wikipedia.org/wiki/"
@@ -316,13 +321,45 @@ def write_snapshot(screener, rows):
     os.makedirs(folder, exist_ok=True)
     today = date.today().isoformat()
     fields = ["date", "stato", "ticker", "price", "market_cap", "peg", "peg_prospettico",
-              "crescita_eps_attesa", "revisione_stime_90g", "score",
+              "crescita_eps_attesa", "revisione_stime_90g", "fcf_yield", "score",
               "revenue_growth_qoq_yoy", "pct_of_52w_high", "criteri_nuovi"]
     with open(os.path.join(folder, f"{today}.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
         for r in rows:
             w.writerow({**r, "date": today, "criteri_nuovi": ",".join(r.get("criteri_nuovi") or [])})
+
+
+def fcf_yield(fcf, mcap):
+    """Flusso di cassa libero / capitalizzazione (Yartseva 2025: tra i
+    predittori dei multibagger). Solo tracciato, non entra nei filtri."""
+    return fcf / mcap if fcf is not None and mcap else None
+
+
+def write_universe_snapshot(results):
+    """Fotografia SETTIMANALE (venerdì, o se non ne esiste ancora una) dei
+    dati .info di tutto l'universo, dai parziali degli shard: base per
+    testare in futuro qualsiasi filtro sui dati come erano allora."""
+    import glob
+    folder = os.path.join("snapshots", "universo")
+    if date.today().weekday() != 4 and glob.glob(os.path.join(folder, "*.csv.gz")):
+        return
+    pdir = os.environ.get("PARTIALS_DIR", "partials")
+    info = {}
+    for fp in glob.glob(os.path.join(pdir, "info-*.json")):
+        with open(fp) as f:
+            info.update(json.load(f))
+    if not info:
+        print("[WARN] fotografia universo: nessun file info-*.json", file=sys.stderr)
+        return
+    idx = {r.get("ticker"): r.get("index") for r in results}
+    df = pd.DataFrame.from_dict(info, orient="index")
+    df.insert(0, "index", [idx.get(t) for t in df.index])
+    df.insert(0, "date", date.today().isoformat())
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, f"{date.today().isoformat()}.csv.gz")
+    df.to_csv(path, index_label="ticker", compression="gzip")
+    print(f"Fotografia universo: {len(df)} ticker -> {path}")
 
 
 def screen_ticker(symbol, index_name):
@@ -367,6 +404,7 @@ def screen_ticker(symbol, index_name):
             "roe": roe,
             "debt_to_equity": (de / 100.0) if de is not None else None,
             "free_cash_flow": fcf,
+            "fcf_yield": fcf_yield(fcf, mcap),
             "revenue_growth_qoq_yoy": rev_g,
             "eps_growth_qoq_yoy": eps_g,
             "peg": peg,
@@ -600,6 +638,7 @@ def main():
     if mode == "merge":
         results, usize = load_partials("garp")
         make_report(results, usize, started)
+        write_universe_snapshot(results)
         return
 
     if shard_env != "":
@@ -611,6 +650,8 @@ def main():
         results = run_screen(sub, screen_ticker)
         save_cache()  # per il moonshot screener nello stesso job
         os.makedirs("partials", exist_ok=True)
+        with open(os.path.join("partials", f"info-{shard}.json"), "w") as f:
+            json.dump({t: INFO_CACHE[t] for t in sub if t in INFO_CACHE}, f, default=str)
         with open(os.path.join("partials", f"garp-{shard}.json"), "w") as f:
             json.dump({"universe_size": len(universe), "results": results},
                       f, default=str)

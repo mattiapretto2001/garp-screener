@@ -238,6 +238,7 @@ def screen_ticker(symbol, index_name):
             "price": price,
             "pct_of_52w_high": pct_high,
             "free_cash_flow": fcf,
+            "fcf_yield": base.fcf_yield(fcf, mcap),
             "total_cash": cash,
             "total_debt": debt,
             "runway_years": runway,
