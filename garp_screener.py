@@ -292,7 +292,18 @@ def estimate_metrics(tk, info):
     in %, revisione a 90 giorni della stima dell'anno prossimo. Aggiunti il
     10/10/2026: il PEG trailing dello screener può essere falsato da poste
     una tantum (caso COCO) e le revisioni sono il segnale più predittivo."""
-    out = {"crescita_eps_attesa": None, "peg_prospettico": None, "revisione_stime_90g": None}
+    out = {"crescita_eps_attesa": None, "peg_prospettico": None, "revisione_stime_90g": None,
+           "sorpresa_utili_ultimo": None, "sorpresa_utili_media4": None}
+    try:
+        # sorprese sugli utili (Yahoo ne conserva solo 4 trimestri: vanno salvate ora)
+        eh = tk.earnings_history
+        if eh is not None and not eh.empty and "surprisePercent" in eh.columns:
+            sp = eh["surprisePercent"].dropna()
+            if len(sp):
+                out["sorpresa_utili_ultimo"] = float(sp.iloc[-1])
+                out["sorpresa_utili_media4"] = float(sp.tail(4).mean())
+    except Exception:
+        pass
     try:
         tr = tk.eps_trend
         if tr is None or tr.empty or "+1y" not in tr.index:
@@ -321,7 +332,8 @@ def write_snapshot(screener, rows):
     os.makedirs(folder, exist_ok=True)
     today = date.today().isoformat()
     fields = ["date", "stato", "ticker", "price", "market_cap", "peg", "peg_prospettico",
-              "crescita_eps_attesa", "revisione_stime_90g", "fcf_yield", "score",
+              "crescita_eps_attesa", "revisione_stime_90g", "sorpresa_utili_ultimo",
+              "sorpresa_utili_media4", "fcf_yield", "score",
               "revenue_growth_qoq_yoy", "pct_of_52w_high", "criteri_nuovi"]
     with open(os.path.join(folder, f"{today}.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
@@ -334,6 +346,32 @@ def fcf_yield(fcf, mcap):
     """Flusso di cassa libero / capitalizzazione (Yartseva 2025: tra i
     predittori dei multibagger). Solo tracciato, non entra nei filtri."""
     return fcf / mcap if fcf is not None and mcap else None
+
+
+def write_watchlist_snapshot():
+    """Ogni sera: metriche prospettiche dei titoli in watchlist.txt (portafoglio
+    e candidati discussi), che spesso non sono fra i promossi."""
+    if not os.path.exists("watchlist.txt"):
+        return
+    with open("watchlist.txt") as f:
+        tickers = [l.split("#")[0].strip() for l in f if l.split("#")[0].strip()]
+    rows = []
+    for t in tickers:
+        try:
+            tk = yf.Ticker(t)
+            info = tk.info or {}
+            price = info.get("currentPrice") or info.get("regularMarketPrice")
+            high = info.get("fiftyTwoWeekHigh")
+            rows.append({"ticker": t, "price": price, "market_cap": info.get("marketCap"),
+                         "pct_of_52w_high": price / high if price and high else None,
+                         "revenue_growth_qoq_yoy": info.get("revenueGrowth"),
+                         "fcf_yield": fcf_yield(info.get("freeCashflow"), info.get("marketCap")),
+                         **estimate_metrics(tk, info)})
+        except Exception as e:
+            print(f"[WARN] watchlist {t}: {e}", file=sys.stderr)
+        time.sleep(1)
+    write_snapshot("watchlist", [dict(r, stato="watchlist") for r in rows])
+    print(f"Fotografia watchlist: {len(rows)} titoli")
 
 
 def write_universe_snapshot(results):
@@ -639,6 +677,7 @@ def main():
         results, usize = load_partials("garp")
         make_report(results, usize, started)
         write_universe_snapshot(results)
+        write_watchlist_snapshot()
         return
 
     if shard_env != "":

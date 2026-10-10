@@ -1,0 +1,27 @@
+# Portafoglio e candidati discussi: fotografia serale in snapshots/watchlist/
+# Aggiornare quando entra/esce un titolo o se ne discute uno nuovo.
+# portafoglio
+NU
+EME
+NBIX
+CRSP
+COCO
+KSPI
+TSM
+AVGO
+CLS
+# candidati
+KNSA
+GLBE
+G24.DE
+RDDT
+IDR.MC
+HALO
+ENR.DE
+MILDEF.ST
+FROG
+XMTR
+HNGE
+EXEL
+CORT
+ETON

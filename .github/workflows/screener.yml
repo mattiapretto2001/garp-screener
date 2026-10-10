@@ -12,6 +12,7 @@ on:
       - "results-moonshot/**"
       - "results-temi/**"
       - "snapshots/**"
+      - "watchlist.txt"
 
 permissions:
   contents: write

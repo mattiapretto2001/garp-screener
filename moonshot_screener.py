@@ -103,6 +103,7 @@ def _stage2_data(tk):
         balance_sheet=_fetch_with_retry(lambda: tk.balance_sheet),
         income_stmt=_fetch_with_retry(lambda: tk.income_stmt),
         eps_trend=_fetch_with_retry(lambda: tk.eps_trend),
+        earnings_history=_fetch_with_retry(lambda: tk.earnings_history),
     )
 
 
