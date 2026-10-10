@@ -1,6 +1,6 @@
-# Temi strutturali — 2026-10-09
+# Temi strutturali — 2026-10-10
 
-Seguiti: 91 | Verdi: **19** | Nuovi verdi: ANTO.L | Persi: —
+Seguiti: 90 | Verdi: **19** | Nuovi verdi: — | Persi: —
 
 ## Nucleare, SMR e uranio
 
@@ -22,7 +22,6 @@ Seguiti: 91 | Verdi: **19** | Nuovi verdi: ANTO.L | Persi: —
 | 🟡 | LEU | Centrus Energy Corp. | stabile | 1 | 14% | 31% | utili -52% |
 | 🟡 | NNE | NANO Nuclear Energy Inc. | pre-ricavi | 1 | n/d | 25% | — |
 | 🔴 | TLN | Talen Energy Corporation | crescita | 5 | 111% | 84% | debito netto/EBITDA 16.1x |
-| 🔴 | UROY · | Uranium Royalty Corp. | crescita | 4 | 113% | 76% | debito netto/EBITDA 8.5x |
 
 ## Rete elettrica e generazione per l'AI
 
@@ -52,7 +51,7 @@ Seguiti: 91 | Verdi: **19** | Nuovi verdi: ANTO.L | Persi: —
 | 🟡 | VRT | Vertiv Holdings Co | crescita | 4 | 24% | 64% | — |
 | 🟡 | AYI · | Acuity Inc. | stabile | 4 | 3% | 78% | — |
 | 🟡 | ATKR · | Atkore Inc. | stabile | 4 | 8% | 100% | utili -98% |
-| 🟡 | RNW · | ReNew Energy Global Plc | stabile | 4 | 14% | 84% | debito netto/EBITDA 8.0x |
+| 🟡 | RNW · | ReNew Energy Global Plc | stabile | 4 | 14% | 88% | debito netto/EBITDA 8.0x |
 | 🟡 | SLR.MC · | Solaria Energía y Medio Ambi | crescita | 4 | 39% | 62% | — |
 | 🟡 | AMSC | American Superconductor Corp | crescita | 4 | 30% | 43% | diluizione 17%/anno |
 | 🟡 | NEE | NextEra Energy, Inc. | stabile | 3 | 12% | 78% | debito netto/EBITDA 7.4x |
