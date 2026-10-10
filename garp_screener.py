@@ -67,7 +67,7 @@ CACHE_KEYS = [
     "debtToEquity", "freeCashflow", "revenueGrowth", "earningsQuarterlyGrowth",
     "trailingPegRatio", "trailingPE", "forwardPE", "earningsGrowth",
     "totalRevenue", "grossMargins", "fiftyTwoWeekHigh", "twoHundredDayAverage",
-    "totalCash", "totalDebt", "currentRatio",
+    "totalCash", "totalDebt", "currentRatio", "ebitda",
 ]
 
 WIKI = "https://en.wikipedia.org/wiki/"
@@ -160,6 +160,48 @@ def _us_full_listing():
     return tickers
 
 
+EU_EXCHANGES = {  # regione Yahoo -> borsa principale
+    "it": "MIL", "de": "GER", "fr": "PAR", "gb": "LSE", "nl": "AMS", "es": "MCE",
+    "se": "STO", "no": "OSL", "dk": "CPH", "fi": "HEL", "ch": "EBS", "be": "BRU",
+    "at": "VIE", "pt": "LIS",
+}
+EU_CURRENCIES = {"EUR", "GBP", "CHF", "SEK", "NOK", "DKK"}
+
+
+def _europe_listing(min_mcap=150e6):
+    """Medie e piccole aziende europee dallo screener di Yahoo (gli indici
+    Wikipedia coprono solo le ~300 blue chip). Scarta le doppie quotazioni
+    di società estere (prefissi 1xxx.MI / 0xxx.L, bilancio in valute non
+    europee) e tiene, per ogni società, la quotazione più liquida."""
+    from yfinance import EquityQuery as Q
+    best = {}
+    for reg, ex in EU_EXCHANGES.items():
+        q = Q("and", [Q("eq", ["region", reg]), Q("is-in", ["exchange", ex]),
+                      Q("gte", ["intradaymarketcap", min_mcap])])
+        off = 0
+        try:
+            while True:
+                r = yf.screen(q, size=250, offset=off, sortField="intradaymarketcap", sortAsc=False)
+                quotes = r.get("quotes") or []
+                for x in quotes:
+                    sym = x.get("symbol") or ""
+                    if x.get("quoteType") != "EQUITY" or x.get("financialCurrency") not in EU_CURRENCIES:
+                        continue
+                    if sym[:1].isdigit():  # mercati esteri di Milano/Londra
+                        continue
+                    name = (x.get("longName") or x.get("shortName") or sym).lower().strip()
+                    px = (x.get("regularMarketPrice") or 0) / (100 if x.get("currency") == "GBp" else 1)
+                    liq = px * (x.get("averageDailyVolume3Month") or 0)
+                    if name not in best or liq > best[name][1]:
+                        best[name] = (sym, liq)
+                off += 250
+                if not quotes or off >= (r.get("total") or 0):
+                    break
+        except Exception as e:
+            print(f"[WARN] Europa {reg}: {e}", file=sys.stderr)
+    return sorted(s for s, _ in best.values())
+
+
 def build_universe():
     """Costruisce l'universo globale. Ogni indice è opzionale: se una fonte
     fallisce si prosegue con le altre."""
@@ -194,6 +236,7 @@ def build_universe():
     )
 
     # Per ultimo, così i membri degli indici mantengono l'etichetta dell'indice
+    u["Europa (mid/small)"] = _europe_listing()
     u["USA (altre quotate)"] = _us_full_listing()
 
     tickers = {}

@@ -57,9 +57,14 @@ CRITERIA = {
     "pct_of_52w_high_min": 0.70,
     "runway_years_min": 2.0,
     "debt_to_cash_max": 2.0,
+    "net_debt_ebitda_max": 2.5,   # alternativa al debito/cassa per chi ha EBITDA > 0
     "current_ratio_min": 1.2,
     "dilution_cagr_max": 0.15,
 }
+
+# Dal 10/10/2026 il Moonshot non eredita più le esclusioni di settore del GARP:
+# energia e materie prime restano ammesse ma segnalate come cicliche
+CYCLICAL_SECTORS = {"Energy", "Basic Materials"}
 
 MAX_WORKERS = 8
 RESULTS_DIR = "results-moonshot"
@@ -174,27 +179,53 @@ def screen_ticker(symbol, index_name):
         cash = info.get("totalCash")
         debt = info.get("totalDebt")
         cur_ratio = info.get("currentRatio")
+        ebitda = info.get("ebitda")
+        financial = sector == "Financial Services"
 
         pct_high = (price / high52) if price and high52 else None
         runway = None
         if fcf is not None and fcf < 0 and cash:
             runway = cash / abs(fcf)
 
+        gm_ok = gm is not None and gm > CRITERIA["gross_margin_min"]
+        debt_cash_ok = (debt is None or debt == 0
+                        or (cash is not None and cash > 0
+                            and debt / cash <= CRITERIA["debt_to_cash_max"]))
+        debt_ebitda_ok = (debt is not None and ebitda is not None and ebitda > 0
+                          and (debt - (cash or 0)) / ebitda <= CRITERIA["net_debt_ebitda_max"])
+        cur_ok = cur_ratio is None or cur_ratio > CRITERIA["current_ratio_min"]
+        net_cash = cash is not None and debt is not None and cash >= debt
+
         checks = {
-            "sector_ok": sector is not None and sector not in base.EXCLUDED_SECTORS,
+            "sector_ok": sector is not None,
             "mcap_ok": mcap is not None and CRITERIA["mcap_min"] <= mcap <= CRITERIA["mcap_max"],
             "revenue_scale_ok": rev_ttm is not None and rev_ttm > CRITERIA["revenue_ttm_min"],
             "hypergrowth_ok": rev_g is not None and rev_g > CRITERIA["rev_growth_min"],
-            "gross_margin_ok": gm is not None and gm > CRITERIA["gross_margin_min"],
+            # banche e assicurazioni non hanno un margine lordo significativo
+            "gross_margin_ok": gm_ok or financial,
             "momentum_ok": (pct_high is not None and pct_high >= CRITERIA["pct_of_52w_high_min"]
                             and price is not None and ma200 is not None and price > ma200),
             "runway_ok": (fcf is None or fcf >= 0
                           or (runway is not None and runway > CRITERIA["runway_years_min"])),
-            "debt_ok": (debt is None or debt == 0
-                        or (cash is not None and cash > 0
-                            and debt / cash <= CRITERIA["debt_to_cash_max"])),
-            "liquidity_ok": cur_ratio is None or cur_ratio > CRITERIA["current_ratio_min"],
+            "debt_ok": debt_cash_ok or debt_ebitda_ok,
+            # il current ratio conta solo per chi ha debito netto (falsato dai
+            # fondi dei clienti in pagamenti e finanziari)
+            "liquidity_ok": cur_ok or net_cash or financial,
         }
+
+        # Criteri introdotti il 10/10/2026: in osservazione parallela, il titolo
+        # resta marcato finché non si decide se tenerli
+        criteri_nuovi = []
+        if index_name == "Europa (mid/small)":
+            criteri_nuovi.append("universo_europa")
+        if sector in base.EXCLUDED_SECTORS:
+            criteri_nuovi.append("settore")
+        if not gm_ok:
+            criteri_nuovi.append("margine_finanziari")
+        if not debt_cash_ok:
+            criteri_nuovi.append("debito_ebitda")
+        if not cur_ok:
+            criteri_nuovi.append("liquidita_cassa_netta")
 
         result = {
             "ticker": symbol,
@@ -215,6 +246,8 @@ def screen_ticker(symbol, index_name):
             "runway_years": runway,
             "current_ratio": cur_ratio,
             "checks": checks,
+            "criteri_nuovi": criteri_nuovi,
+            "ciclico": sector in CYCLICAL_SECTORS or "Shipping" in (info.get("industry") or ""),
         }
 
         if not all(checks.values()):
@@ -321,7 +354,8 @@ def make_report(results, universe_size, started):
         "passed_count": len(passed),
         "new_today": new_today,
         "dropped_since_yesterday": dropped,
-        "passed": passed[:60],
+        "passed_old_criteria": sum(1 for r in passed if not r.get("criteri_nuovi")),
+        "passed": passed[:100],
     }
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -338,13 +372,16 @@ def make_report(results, universe_size, started):
         "",
         f"Universo: {universe_size} | Candidate: **{len(passed)}** | Nuove oggi: **{len(new_today)}** | Uscite: {len(dropped)}",
         "",
+        "† = passa solo coi criteri nuovi del 10/10/2026 (Europa mid/small, settori, debito/EBITDA, liquidità); ⟳ = ciclico",
+        "",
         "| Ticker | Nome | Score | Ricavi q/q | Margine lordo | % dal max 52w | FCF+ | Accel. | Nuovo |",
         "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in passed[:40]:
         lines.append(
             "| {t} | {n} | {sc} | {rg} | {gm} | {ph} | {fcf} | {ac} | {new} |".format(
-                t=r["ticker"], n=(r.get("name") or "")[:30], sc=r.get("score"),
+                t=r["ticker"] + (" †" if r.get("criteri_nuovi") else "") + (" ⟳" if r.get("ciclico") else ""),
+                n=(r.get("name") or "")[:30], sc=r.get("score"),
                 rg=pct(r.get("revenue_growth_qoq_yoy")), gm=pct(r.get("gross_margin")),
                 ph=pct(r.get("pct_of_52w_high")),
                 fcf="✓" if (r.get("free_cash_flow") or 0) > 0 else "–",

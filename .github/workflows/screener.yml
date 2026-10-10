@@ -20,15 +20,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # 8 job paralleli, ognuno su un server con IP diverso: aggira i limiti
-  # di frequenza di Yahoo Finance sull'universo completo (~7.400 titoli)
+  # 10 job paralleli, ognuno su un server con IP diverso: aggira i limiti
+  # di frequenza di Yahoo Finance sull'universo completo (~10.000 titoli con le mid/small europee)
   shard:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,13 +44,13 @@ jobs:
       - name: Run GARP screener (shard)
         env:
           SHARD: ${{ matrix.shard }}
-          SHARDS: "8"
+          SHARDS: "10"
         run: python garp_screener.py
 
       - name: Run Moonshot screener (shard)
         env:
           SHARD: ${{ matrix.shard }}
-          SHARDS: "8"
+          SHARDS: "10"
         run: python moonshot_screener.py
 
       # Temi strutturali: scoperta dalla cache .info del GARP (nessuna chiamata
