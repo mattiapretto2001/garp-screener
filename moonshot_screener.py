@@ -266,6 +266,29 @@ def screen_ticker(symbol, index_name):
         return {"ticker": symbol, "index": index_name, "error": str(e), "passed": False}
 
 
+def _refetch_missing_multi_year(results):
+    """Nel job di merge (IP diverso, nessuna raffica di chiamate alle spalle)
+    rielabora i promossi rimasti senza dati annuali: negli shard Yahoo blocca
+    l'IP dopo le ~900 chiamate del GARP (8/10/2026: dati completi 8 su 45)."""
+    todo = [r for r in results if r.get("passed") and not r.get("multi_year_data_ok")]
+    if not todo:
+        return results
+    print(f"Ricarico i dati annuali di {len(todo)} promossi dal job di merge")
+    fixed = {}
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        futs = {ex.submit(screen_ticker, r["ticker"], r.get("index", "?")): r["ticker"]
+                for r in todo}
+        for fut in as_completed(futs):
+            try:
+                nr = fut.result()
+            except Exception:
+                continue
+            if nr.get("multi_year_data_ok"):
+                fixed[futs[fut]] = nr
+    print(f"Dati annuali recuperati per {len(fixed)} su {len(todo)}")
+    return [fixed.get(r.get("ticker"), r) for r in results]
+
+
 def make_report(results, universe_size, started):
     errors = sum(1 for r in results if r.get("error"))
 
@@ -344,6 +367,7 @@ def main():
 
     if mode == "merge":
         results, usize = base.load_partials("moon")
+        results = _refetch_missing_multi_year(results)
         make_report(results, usize, started)
         return
 
