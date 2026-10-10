@@ -1,6 +1,6 @@
 # Temi strutturali — 2026-10-10
 
-Seguiti: 91 | Verdi: **19** | Nuovi verdi: — | Persi: TECK
+Seguiti: 91 | Verdi: **20** | Nuovi verdi: TECK | Persi: —
 
 ## Nucleare, SMR e uranio
 
@@ -11,7 +11,6 @@ Seguiti: 91 | Verdi: **19** | Nuovi verdi: — | Persi: TECK
 | 🟡 | CEG | Constellation Energy Corpora | crescita | 3 | 23% | 72% | — |
 | 🟡 | VST | Vistra Corp. | stabile | 3 | -6% | 74% | ricavi -6%; utili -6% |
 | 🟡 | XE | X-Energy, Inc. | crescita | 3 | 196% | 37% | — |
-| 🟡 | UUUU · | Energy Fuels Inc. | crescita | 3 | 496% | 36% | diluizione 15%/anno |
 | 🟡 | CCJ | Cameco Corporation | stabile | 2 | -7% | 65% | ricavi -7%; utili -92% |
 | 🟡 | BWXT | BWX Technologies, Inc. | crescita | 2 | 18% | 59% | — |
 | 🟡 | OKLO | Oklo Inc. | pre-ricavi | 2 | n/d | 18% | — |
@@ -30,6 +29,7 @@ Seguiti: 91 | Verdi: **19** | Nuovi verdi: — | Persi: TECK
 |---|---|---|---|---|---|---|---|
 | 🟢 | SCCO · | Southern Copper Corporation | crescita | 7 | 41% | 95% | — |
 | 🟢 | GEV | GE Vernova Inc. | crescita | 6 | 22% | 84% | — |
+| 🟢 | TECK · | Teck Resources Limited | crescita | 6 | 78% | 94% | — |
 | 🟢 | NVT | nVent Electric plc | crescita | 6 | 53% | 91% | — |
 | 🟢 | AQ.ST · | AQ Group AB (publ) | stabile | 6 | 10% | 96% | — |
 | 🟢 | ERO · | Ero Copper Corp. | crescita | 6 | 74% | 92% | — |
@@ -48,6 +48,7 @@ Seguiti: 91 | Verdi: **19** | Nuovi verdi: — | Persi: TECK
 | 🟡 | FCX | Freeport-McMoRan Inc. | stabile | 5 | -7% | 92% | ricavi -7% |
 | 🟡 | AEIS · | Advanced Energy Industries,  | crescita | 5 | 30% | 73% | — |
 | 🟡 | ENIC · | Enel Chile S.A. | stabile | 5 | -11% | 95% | ricavi -11% |
+| 🟡 | VER.VI · | VERBUND AG | stabile | 5 | -5% | 92% | ricavi -5%; utili -39% |
 | 🟡 | SU.PA | Schneider Electric S.E. | stabile | 4 | 10% | 85% | — |
 | 🟡 | VRT | Vertiv Holdings Co | crescita | 4 | 24% | 64% | — |
 | 🟡 | ANTO.L · | Antofagasta plc | crescita | 4 | 18% | 84% | — |
@@ -67,7 +68,6 @@ Seguiti: 91 | Verdi: **19** | Nuovi verdi: — | Persi: TECK
 | 🟡 | MWH · | SOLV Energy, Inc. | crescita | 3 | 78% | 54% | — |
 | 🟡 | ACCV · | Accelevation Holdings Corp. | crescita | 3 | 80% | 98% | debito netto/EBITDA 5.2x |
 | 🟡 | ERG.MI · | ERG S.p.A. | stabile | 3 | n/d | 84% | — |
-| 🟡 | KEN · | Kenon Holdings Ltd. | crescita | 3 | 93% | 62% | debito netto/EBITDA 7.6x |
 | 🟡 | ORSTED.CO · | Ørsted A/S | crescita | 2 | 20% | 77% | diluizione 20%/anno |
 | 🟡 | AEP | American Electric Power Comp | stabile | 2 | 7% | 87% | utili -43% |
 | 🟡 | HUBB | Hubbell Incorporated | crescita | 2 | 15% | 84% | — |
