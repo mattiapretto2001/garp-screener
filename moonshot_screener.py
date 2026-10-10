@@ -27,6 +27,7 @@ PUNTEGGIO BONUS (ordina i candidati, non esclude):
   +1 posizione di cassa netta (cassa > debito)
   +1 prezzo entro il 10% dal massimo a 52 settimane
   +1 stime EPS riviste al rialzo negli ultimi 30 giorni
+  +1 stime EPS dell'anno prossimo salite di almeno il 10% in 90 giorni (dal 10/10/2026)
 
 Output: results-moonshot/YYYY-MM-DD.json, latest.json, latest.md
 La validazione QUALITATIVA (vantaggio competitivo, trend secolare, TAM,
@@ -282,6 +283,11 @@ def screen_ticker(symbol, index_name):
         eps_up = _eps_revised_up(tk)
         if eps_up:
             score += 1
+        # dal 10/10/2026: conta anche QUANTO salgono le stime (score max 8)
+        est = base.estimate_metrics(tk, info)
+        result.update(est)
+        if (est["revisione_stime_90g"] or 0) >= 0.10:
+            score += 1
 
         result.update({
             "passed": True,
@@ -359,6 +365,7 @@ def make_report(results, universe_size, started):
         json.dump(report, f, indent=1, default=str)
     with open(latest_path, "w") as f:
         json.dump(report, f, indent=1, default=str)
+    base.write_snapshot("moonshot", [dict(r, stato="passed") for r in passed])
 
     def pct(x):
         return f"{x*100:.0f}%" if isinstance(x, (int, float)) else "n/d"

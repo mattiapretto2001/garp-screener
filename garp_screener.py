@@ -281,6 +281,50 @@ def compute_peg(info):
     return None, None
 
 
+def estimate_metrics(tk, info):
+    """Dalle stime degli analisti (eps_trend): crescita EPS attesa anno
+    prossimo / anno corrente, PEG prospettico = P/E forward / crescita attesa
+    in %, revisione a 90 giorni della stima dell'anno prossimo. Aggiunti il
+    10/10/2026: il PEG trailing dello screener può essere falsato da poste
+    una tantum (caso COCO) e le revisioni sono il segnale più predittivo."""
+    out = {"crescita_eps_attesa": None, "peg_prospettico": None, "revisione_stime_90g": None}
+    try:
+        tr = tk.eps_trend
+        if tr is None or tr.empty or "+1y" not in tr.index:
+            return out
+        nxt = tr.loc["+1y"]
+        cur0 = tr.loc["0y"].get("current") if "0y" in tr.index else None
+        cur1, ago90 = nxt.get("current"), nxt.get("90daysAgo")
+        if cur0 and cur1 and cur0 > 0:
+            g = float(cur1) / float(cur0) - 1.0
+            out["crescita_eps_attesa"] = g
+            fpe = info.get("forwardPE")
+            if fpe and fpe > 0 and g > 0:
+                out["peg_prospettico"] = float(fpe) / (g * 100.0)
+        if cur1 is not None and ago90 and ago90 > 0:
+            out["revisione_stime_90g"] = float(cur1) / float(ago90) - 1.0
+    except Exception:
+        pass
+    return out
+
+
+def write_snapshot(screener, rows):
+    """Fotografia giornaliera dei promossi (e near miss) con le metriche
+    prospettiche: fra 6-12 mesi permette un backtest senza senno di poi."""
+    import csv
+    folder = os.path.join("snapshots", screener)
+    os.makedirs(folder, exist_ok=True)
+    today = date.today().isoformat()
+    fields = ["date", "stato", "ticker", "price", "market_cap", "peg", "peg_prospettico",
+              "crescita_eps_attesa", "revisione_stime_90g", "score",
+              "revenue_growth_qoq_yoy", "pct_of_52w_high", "criteri_nuovi"]
+    with open(os.path.join(folder, f"{today}.csv"), "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+        w.writeheader()
+        for r in rows:
+            w.writerow({**r, "date": today, "criteri_nuovi": ",".join(r.get("criteri_nuovi") or [])})
+
+
 def screen_ticker(symbol, index_name):
     """Stage 1: filtri da .info. Ritorna dict con esito e metriche."""
     try:
@@ -339,6 +383,8 @@ def screen_ticker(symbol, index_name):
                 cagr is not None and cagr > CRITERIA["sales_growth_5y_min"]
             )
             result["passed"] = result["checks"]["sales_5y_ok"]
+            if result["passed"]:
+                result.update(estimate_metrics(tk, info))
         else:
             result["passed"] = False
 
@@ -503,6 +549,8 @@ def make_report(results, universe_size, started):
         json.dump(report, f, indent=1, default=str)
     with open(latest_path, "w") as f:
         json.dump(report, f, indent=1, default=str)
+    write_snapshot("garp", [dict(r, stato="passed") for r in passed]
+                   + [dict(r, stato="near_miss") for r in near_miss])
 
     # Riepilogo leggibile in Markdown
     def fmt_pct(x):

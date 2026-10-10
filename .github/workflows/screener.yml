@@ -11,6 +11,7 @@ on:
       - "results/**"
       - "results-moonshot/**"
       - "results-temi/**"
+      - "snapshots/**"
 
 permissions:
   contents: write
@@ -147,6 +148,6 @@ jobs:
           git config user.name "garp-bot"
           git config user.email "actions@github.com"
           git pull --rebase origin main || true
-          git add results/ results-moonshot/ results-temi/
+          git add results/ results-moonshot/ results-temi/ snapshots/
           git diff --cached --quiet || git commit -m "Screening GARP+Moonshot+Temi $(date -u +%F)"
           git push
