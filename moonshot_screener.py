@@ -203,8 +203,7 @@ def screen_ticker(symbol, index_name):
             "revenue_scale_ok": rev_ttm is not None and rev_ttm > CRITERIA["revenue_ttm_min"],
             "hypergrowth_ok": rev_g is not None and rev_g > CRITERIA["rev_growth_min"],
             "gross_margin_ok": gm_ok,
-            "momentum_ok": (pct_high is not None and pct_high >= CRITERIA["pct_of_52w_high_min"]
-                            and price is not None and ma200 is not None and price > ma200),
+            "momentum_ok": price is not None and ma200 is not None and price > ma200,
             "runway_ok": (fcf is None or fcf >= 0
                           or (runway is not None and runway > CRITERIA["runway_years_min"])),
             "debt_ok": debt_cash_ok or debt_ebitda_ok,
@@ -224,6 +223,10 @@ def screen_ticker(symbol, index_name):
             criteri_nuovi.append("debito_ebitda")
         if not cur_ok:
             criteri_nuovi.append("liquidita_cassa_netta")
+        # backtest 27/10/2026: la soglia del 70% del massimo e' ridondante,
+        # basta il prezzo sopra la media a 200 giorni
+        if pct_high is None or pct_high < CRITERIA["pct_of_52w_high_min"]:
+            criteri_nuovi.append("momentum_solo_200gg")
 
         result = {
             "ticker": symbol,

@@ -286,6 +286,21 @@ def compute_peg(info):
     return None, None
 
 
+def shares_change_1y(tk):
+    """Variazione delle azioni in circolazione tra gli ultimi due bilanci annuali."""
+    try:
+        bs = tk.balance_sheet
+        for name in ("Ordinary Shares Number", "Share Issued"):
+            if bs is not None and not bs.empty and name in bs.index:
+                row = bs.loc[name].dropna().sort_index()
+                if len(row) >= 2 and float(row.iloc[-2]) > 0:
+                    return float(row.iloc[-1]) / float(row.iloc[-2]) - 1.0
+                return None
+    except Exception:
+        pass
+    return None
+
+
 def estimate_metrics(tk, info):
     """Dalle stime degli analisti (eps_trend): crescita EPS attesa anno
     prossimo / anno corrente, PEG prospettico = P/E forward / crescita attesa
@@ -461,6 +476,11 @@ def screen_ticker(symbol, index_name):
             result["passed"] = result["checks"]["sales_5y_ok"]
             if result["passed"]:
                 result.update(estimate_metrics(tk, info))
+                # backtest 27/10/2026: GARP + azioni in calo (riacquisti netti)
+                # e' la variante piu' solida; per ora solo segnalata
+                result["variazione_azioni_1a"] = shares_change_1y(tk)
+                result["riacquisti_netti"] = (result["variazione_azioni_1a"] is not None
+                                              and result["variazione_azioni_1a"] < 0)
         else:
             result["passed"] = False
 
@@ -613,6 +633,7 @@ def make_report(results, universe_size, started):
         "analyzed": len(results),
         "errors": errors,
         "passed_count": len(passed),
+        "passed_con_riacquisti": sum(1 for r in passed if r.get("riacquisti_netti")),
         "new_today": [r["ticker"] for r in new_today],
         "dropped_since_yesterday": dropped,
         "passed": passed,
