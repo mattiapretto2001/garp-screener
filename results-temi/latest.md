@@ -1,6 +1,6 @@
-# Temi strutturali — 2026-10-30
+# Temi strutturali — 2026-11-01
 
-Seguiti: 91 | Verdi: **6** | Nuovi verdi: — | Persi: ERO, FCX, LITE, PWR, SCCO
+Seguiti: 91 | Verdi: **8** | Nuovi verdi: TECK, ZAP.OL | Persi: —
 
 ## Nucleare, SMR e uranio
 
@@ -13,13 +13,13 @@ Seguiti: 91 | Verdi: **6** | Nuovi verdi: — | Persi: ERO, FCX, LITE, PWR, SCCO
 | 🟡 | VST | Vistra Corp. | stabile | 2 | -6% | 70% | ricavi -6%; utili -6% |
 | 🟡 | CCJ | Cameco Corporation | stabile | 2 | -7% | 57% | ricavi -7%; utili -92% |
 | 🟡 | BWXT | BWX Technologies, Inc. | crescita | 2 | 18% | 54% | — |
-| 🟡 | OKLO | Oklo Inc. | pre-ricavi | 2 | n/d | 18% | — |
+| 🟡 | OKLO | Oklo Inc. | pre-ricavi | 2 | n/d | 19% | — |
 | 🟡 | DNN | Denison Mines Corp. | pre-ricavi | 2 | -44% | 50% | — |
 | 🟡 | GFUZ | General Fusion Group Ltd. | stabile | 2 | n/d | 40% | — |
 | 🟡 | NXE | NexGen Energy Ltd. | stabile | 1 | n/d | 59% | — |
 | 🟡 | UEC | Uranium Energy Corp. | pre-ricavi | 1 | n/d | 38% | — |
-| 🟡 | SMR | NuScale Power Corporation | pre-ricavi | 1 | -99% | 12% | diluizione 66%/anno |
-| 🟡 | LEU | Centrus Energy Corp. | stabile | 1 | 14% | 26% | utili -52% |
+| 🟡 | SMR | NuScale Power Corporation | pre-ricavi | 1 | -99% | 13% | diluizione 66%/anno |
+| 🟡 | LEU | Centrus Energy Corp. | stabile | 1 | 14% | 29% | utili -52% |
 | 🟡 | NNE | NANO Nuclear Energy Inc. | pre-ricavi | 1 | n/d | 24% | — |
 | 🔴 | TLN | Talen Energy Corporation | crescita | 4 | 111% | 76% | debito netto/EBITDA 16.1x |
 
@@ -28,6 +28,8 @@ Seguiti: 91 | Verdi: **6** | Nuovi verdi: — | Persi: ERO, FCX, LITE, PWR, SCCO
 | | Ticker | Nome | Profilo | Score | Ricavi q/q | % max 52w | Campanelli |
 |---|---|---|---|---|---|---|---|
 | 🟢 | AQ.ST · | AQ Group AB (publ) | crescita | 7 | 21% | 90% | — |
+| 🟢 | ZAP.OL · | Zaptec ASA | crescita | 7 | 32% | 92% | — |
+| 🟢 | TECK · | Teck Resources Limited | crescita | 6 | 33% | 84% | — |
 | 🟢 | HAYW · | Hayward Holdings, Inc. | stabile | 6 | 6% | 93% | — |
 | 🟢 | AEP | American Electric Power Comp | stabile | 5 | 14% | 93% | — |
 | 🟢 | AYI · | Acuity Inc. | stabile | 5 | 3% | 84% | — |
@@ -41,17 +43,16 @@ Seguiti: 91 | Verdi: **6** | Nuovi verdi: — | Persi: ERO, FCX, LITE, PWR, SCCO
 | 🟡 | OEWA.DE · | VERBUND AG | stabile | 5 | -5% | 100% | ricavi -5%; utili -39% |
 | 🟡 | AEIS · | Advanced Energy Industries,  | crescita | 5 | 30% | 56% | — |
 | 🟡 | SU.PA | Schneider Electric S.E. | stabile | 4 | 10% | 76% | — |
+| 🟡 | PWR | Quanta Services, Inc. | crescita | 4 | 57% | 79% | — |
 | 🟡 | ANTO.L · | Antofagasta plc | crescita | 4 | 18% | 70% | — |
-| 🟡 | NVT | nVent Electric plc | crescita | 4 | 53% | 68% | — |
+| 🟡 | NVT | nVent Electric plc | crescita | 4 | 44% | 68% | — |
 | 🟡 | ERO · | Ero Copper Corp. | crescita | 4 | 74% | 71% | — |
-| 🟡 | RNW · | ReNew Energy Global Plc | stabile | 4 | 14% | 89% | debito netto/EBITDA 8.0x |
 | 🟡 | AMSC | American Superconductor Corp | crescita | 4 | 30% | 44% | diluizione 17%/anno |
 | 🟡 | 6501.T | Hitachi, Ltd. | stabile | 3 | n/d | 84% | — |
 | 🟡 | ETN | Eaton Corporation plc | crescita | 3 | 21% | 77% | — |
 | 🟡 | ABBN.SW | ABB Ltd | stabile | 3 | 14% | 79% | utili -1% |
 | 🟡 | ENR.DE | Siemens Energy AG | crescita | 3 | 18% | 66% | — |
 | 🟡 | 0836.HK · | China Resources Power Holdin | stabile | 3 | 9% | 90% | utili -16% |
-| 🟡 | PWR | Quanta Services, Inc. | crescita | 3 | 57% | 79% | — |
 | 🟡 | FCX | Freeport-McMoRan Inc. | stabile | 3 | 8% | 78% | — |
 | 🟡 | LR.PA · | Legrand SA | stabile | 3 | 15% | 78% | — |
 | 🟡 | HUBB | Hubbell Incorporated | crescita | 3 | 25% | 75% | — |
@@ -71,8 +72,7 @@ Seguiti: 91 | Verdi: **6** | Nuovi verdi: — | Persi: ERO, FCX, LITE, PWR, SCCO
 | 🟡 | HBM · | Hudbay Minerals Inc. | crescita | 2 | 18% | 67% | — |
 | 🟡 | ANE.MC · | Corporación Acciona Energías | stabile | 2 | -34% | 83% | ricavi -34% |
 | 🟡 | ENIC · | Enel Chile S.A. | stabile | 2 | 1% | 87% | — |
-| 🟡 | DRX.L · | Drax Group plc | stabile | 2 | -6% | 86% | ricavi -6%; utili -20% |
-| 🟡 | FRVO · | Fervo Energy Company | pre-ricavi | 2 | n/d | 19% | — |
+| 🟡 | TAC · | TransAlta Corporation | stabile | 2 | 12% | 73% | — |
 | 🟡 | BE · | Bloom Energy Corporation | crescita | 1 | 138% | 58% | — |
 | 🟡 | FPS · | Forgent Power Solutions, Inc | crescita | 1 | 94% | 39% | — |
 | 🟡 | NKT.VI · | NKT A/S | stabile | 1 | 0% | 73% | utili -2% |
@@ -108,7 +108,7 @@ Seguiti: 91 | Verdi: **6** | Nuovi verdi: — | Persi: ERO, FCX, LITE, PWR, SCCO
 | 🟡 | 300750.SZ | Contemporary Amperex Technol | crescita | 4 | 59% | 50% | — |
 | 🟡 | MP | MP Materials Corp. | crescita | 4 | 120% | 52% | — |
 | 🟡 | ALB | Albemarle Corporation | crescita | 3 | 31% | 41% | — |
-| 🟡 | QS | QuantumScape Corporation | stabile | 1 | n/d | 22% | — |
+| 🟡 | QS | QuantumScape Corporation | stabile | 1 | n/d | 23% | — |
 | 🟡 | FLNC | Fluence Energy, Inc. | stabile | 1 | 8% | 17% | — |
 | 🟡 | SLDP | Solid Power, Inc. | pre-ricavi | 1 | n/d | 22% | — |
 | 🔴 | EOSE | Eos Energy Enterprises, Inc. | crescita | 1 | 351% | 10% | runway 0.9 anni; diluizione 60%/anno |
