@@ -172,14 +172,21 @@ def fetch_info(tk):
 
 
 def check_info(info, yf_msgs=()):
-    """Solleva DataError se .info è vuoto o, per un'azione, mancano i campi
-    chiave (settore, capitalizzazione, prezzo). Fondi ed ETF (quoteType non
-    EQUITY) restano bocciati come prima: non sono errori di dati.
-    `yf_msgs` (da fetch_info) precisa la causa di un .info vuoto."""
+    """Controllo di qualità di .info. Solleva DataError se:
+      - .info è vuoto (tipo dalla causa HTTP in `yf_msgs`, se nota);
+      - mancano campi chiave E yfinance ha avuto un errore transitorio
+        (401/429/timeout): .info è parziale, non valutabile;
+      - per un'azione manca il prezzo.
+    Ritorna l'elenco dei campi chiave mancanti (sector, marketCap) senza
+    errore transitorio: il chiamante li tratta come non valutabili solo se
+    sono decisivi (vedi missing_is_decisive). Molti strumenti quotati
+    (warrant, unit, obbligazioni, investment trust) non hanno settore o
+    capitalizzazione per costruzione: restano bocciati come prima.
+    Fondi ed ETF (quoteType non EQUITY) non sono mai errori di dati."""
+    tipi = [classify_error(m) for m in yf_msgs]
     meaningful = [k for k, v in (info or {}).items()
                   if v is not None and k != "trailingPegRatio"]
     if len(meaningful) < 3:
-        tipi = [classify_error(m) for m in yf_msgs]
         for tipo in ("non_trovato", "limite_frequenza", "timeout", "rete"):
             if tipo in tipi:
                 raise DataError(tipo, f"{tipo}: .info vuoto; yfinance: "
@@ -188,13 +195,33 @@ def check_info(info, yf_msgs=()):
                                       "delistato o risposta vuota di Yahoo)")
     qt = info.get("quoteType")
     if qt and qt != "EQUITY":
-        return
+        return []
     price = info.get("currentPrice") or info.get("regularMarketPrice")
-    missing = [k for k, v in (("sector", info.get("sector")),
-                              ("marketCap", info.get("marketCap")),
-                              ("price", price)) if v is None]
-    if missing:
+    missing = [k for k in ("sector", "marketCap") if info.get(k) is None]
+    if price is None:
+        missing.append("price")
+    if not missing:
+        return []
+    for tipo in ("limite_frequenza", "timeout", "rete"):
+        if tipo in tipi:
+            raise DataError(tipo, f"{tipo}: .info parziale (manca {', '.join(missing)}); "
+                                  f"yfinance: {yf_msgs[tipi.index(tipo)][:200]}")
+    if "price" in missing:
         raise DataError("campi_mancanti", f"campi_mancanti: {', '.join(missing)}")
+    return missing
+
+
+# controlli che dipendono da ciascun campo chiave
+FIELD_CHECKS = {"sector": ("sector_ok",), "marketCap": ("mcap_ok",)}
+
+
+def missing_is_decisive(missing, checks):
+    """True se i campi mancanti possono cambiare il verdetto: tutti gli
+    altri controlli sono superati. Allora il titolo è non valutabile."""
+    if not missing:
+        return False
+    dep = {c for f in missing for c in FIELD_CHECKS.get(f, ())}
+    return all(v for k, v in checks.items() if k not in dep)
 
 
 def error_result(symbol, index_name, err, **extra):
@@ -635,7 +662,7 @@ def screen_ticker(symbol, index_name):
         info, yf_msgs = fetch_info(tk)
         if info.get("marketCap") is not None or info.get("regularMarketPrice") is not None:
             INFO_CACHE[symbol] = {k: info.get(k) for k in CACHE_KEYS}
-        check_info(info, yf_msgs)  # .info vuoto o senza campi chiave: non valutabile
+        missing = check_info(info, yf_msgs)  # .info vuoto o parziale: non valutabile
 
         sector = info.get("sector")
         mcap = info.get("marketCap")
@@ -656,6 +683,9 @@ def screen_ticker(symbol, index_name):
         checks["eps_qoq_ok"] = eps_g is not None and eps_g > CRITERIA["eps_qoq_min"]
         checks["peg_ok"] = peg is not None and 0 < peg < CRITERIA["peg_max"]
 
+        if missing_is_decisive(missing, checks):
+            # passerebbe lo stadio 1 se ci fossero i campi mancanti
+            raise DataError("campi_mancanti", f"campi_mancanti: {', '.join(missing)}")
         stage1_pass = all(checks.values())
 
         result = {

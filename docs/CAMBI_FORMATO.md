@@ -16,11 +16,11 @@ Regola: i campi esistenti non si rinominano e non si tolgono, si aggiungono solo
 
 Tipi di errore possibili:
 
-- `limite_frequenza`: Yahoo ha risposto 429 o "Too Many Requests";
-- `timeout`: la richiesta è scaduta;
+- `limite_frequenza`: Yahoo ha risposto 429 o 401 "Invalid Crumb" (blocco dell'IP), con `.info` vuoto o parziale;
+- `timeout`: la richiesta è scaduta (anche con `.info` parziale);
 - `non_trovato`: 404, ticker non trovato o delistato;
 - `info_vuoto`: `.info` vuoto (ticker inesistente o delistato, oppure risposta vuota di Yahoo: di solito è un limite di frequenza mascherato);
-- `campi_mancanti`: `.info` presente ma senza settore, capitalizzazione o prezzo, oppure bilancio annuale non scaricabile per un titolo che ha passato lo stadio 1;
+- `campi_mancanti`: `.info` presente ma senza prezzo, o senza settore o capitalizzazione quando decidono il verdetto (vedi sotto), oppure bilancio annuale non scaricabile per un titolo che ha passato lo stadio 1;
 - `rete`: errore di connessione;
 - `altro`: qualsiasi altra eccezione;
 - `sconosciuto`: solo per parziali vecchi, scritti prima di questo cambio.
@@ -33,10 +33,16 @@ Il campo esistente `errors` resta la lista dei ticker in errore.
 
 ### Cambi di significato da conoscere (nessun campo rinominato)
 
-1. **`errors` (GARP e Moonshot) conta di più.**
+1. **`errors` (GARP e Moonshot) conta anche i dati vuoti o parziali.**
    Prima un titolo con `.info` vuoto, o senza settore, capitalizzazione o prezzo, era bocciato in silenzio (`sector_ok` falso).
-   Ora è un errore di tipo `info_vuoto` o `campi_mancanti`.
-   Il numero di errori può quindi salire anche a parità di qualità dello scarico: è il numero vero.
+   Ora è un errore, cioè "non valutabile", in questi casi:
+   - `.info` vuoto (tipo `info_vuoto`, `non_trovato` o `limite_frequenza`, secondo la risposta HTTP);
+   - campi chiave mancanti mentre yfinance ha avuto un errore 401/429/timeout: è un `.info` parziale (tipo `limite_frequenza` o `timeout`);
+   - prezzo mancante (`campi_mancanti`);
+   - settore o capitalizzazione mancanti **e decisivi**, cioè il titolo supera tutti gli altri controlli dello stadio 1 (`campi_mancanti`).
+   Settore o capitalizzazione mancanti e non decisivi restano una bocciatura, come prima.
+   Sono warrant, unit di SPAC, obbligazioni quotate e investment trust che non hanno quei campi per costruzione.
+   Nel run di prova del 03/11 erano circa 1.300: contarli come errori avrebbe portato gli errori al 13% senza alcun problema di scarico.
    Fondi ed ETF (`quoteType` diverso da `EQUITY`) restano bocciati come prima, non sono errori.
 2. **`dropped_since_yesterday` non cambia.**
    Contiene ancora tutti i promossi di ieri che oggi non sono promossi, **compresi** quelli in `sospesi_per_dati`.

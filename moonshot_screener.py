@@ -161,20 +161,21 @@ def _eps_revised_up(tk):
         return None
 
 
+# ticker in errore nel GARP dello stesso shard: la loro cache .info è parziale
+GARP_ERRORS = set()
+
+
 def screen_ticker(symbol, index_name):
     try:
         tk = None
-        info = INFO_CACHE.get(symbol)
+        info = None if symbol in GARP_ERRORS else INFO_CACHE.get(symbol)
+        from_cache = bool(info)
         if not info:
             tk = yf.Ticker(symbol)
             info, yf_msgs = base.fetch_info(tk)
-            base.check_info(info, yf_msgs)  # .info vuoto o senza campi chiave: non valutabile
+            missing = base.check_info(info, yf_msgs)  # .info vuoto o parziale: non valutabile
         else:
-            try:
-                base.check_info(info)
-            except base.DataError as e:
-                # dato già ritentato dal GARP nello stesso job: inutile ripetere
-                return base.error_result(symbol, index_name, e, _no_retry=True)
+            missing = base.check_info(info)
 
         sector = info.get("sector")
         mcap = info.get("marketCap")
@@ -218,6 +219,11 @@ def screen_ticker(symbol, index_name):
             # fondi dei clienti nei pagamenti)
             "liquidity_ok": cur_ok or net_cash,
         }
+
+        if base.missing_is_decisive(missing, checks):
+            e = base.DataError("campi_mancanti", f"campi_mancanti: {', '.join(missing)}")
+            # dalla cache: il GARP ha già ritentato nello stesso job
+            return base.error_result(symbol, index_name, e, _no_retry=from_cache)
 
         # Criteri introdotti il 10/10/2026: in osservazione parallela, il titolo
         # resta marcato finché non si decide se tenerli
@@ -432,6 +438,7 @@ def main():
             with open(garp_partial) as f:
                 gp = json.load(f)
             sub = {r["ticker"]: r.get("index", "?") for r in gp["results"]}
+            GARP_ERRORS.update(r["ticker"] for r in gp["results"] if r.get("error"))
             universe_size = int(gp.get("universe_size", 0))
             print(f"Fetta di universo ripresa dal GARP: {len(sub)} ticker")
         except Exception:
