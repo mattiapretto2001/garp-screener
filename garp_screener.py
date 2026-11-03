@@ -744,7 +744,16 @@ def run_screen(universe, fn, workers=MAX_WORKERS, retries=2, pause=RETRY_BASE_PA
                     r.setdefault("error_type", classify_error(r["error"]))
                     r["tentativi"] = attempt + 1
                     no_retry = r.pop("_no_retry", False)
+                    prev = last_err.get(t)
+                    if prev and prev["error_type"] == "non_trovato" and r["error_type"] in (
+                            "limite_frequenza", "info_vuoto"):
+                        # il 404 "quote not found" è la prova più forte: non la
+                        # copre un 401/429 di una passata successiva
+                        r.update(error=prev["error"], error_type="non_trovato")
                     last_err[t] = r
+                    # ticker inesistente: si ritenta solo se prioritario
+                    if r["error_type"] == "non_trovato" and t not in priority:
+                        no_retry = True
                     if not no_retry:
                         errored[t] = pending.get(t)
                 else:

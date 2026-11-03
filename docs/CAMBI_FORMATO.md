@@ -66,5 +66,7 @@ Il campo esistente `errors` resta la lista dei ticker in errore.
 
 - Tra una passata e l'altra c'è una pausa a backoff esponenziale con jitter (circa 15-30 s, poi 30-45 s, poi 60-75 s), al posto dei 25 s fissi.
 - I titoli di watchlist, portafoglio e i promossi di ieri hanno un quarto tentativo, a concorrenza 2.
+- Un ticker con risposta 404 "quote not found" (`non_trovato`) non viene ritentato, salvo se prioritario. Se una passata successiva dà 401/429, resta `non_trovato`.
+- yfinance non solleva gli errori HTTP di `.info`: restituisce un dizionario vuoto e scrive l'errore nel suo logger. Lo screener legge quel logger per dire se un `.info` vuoto viene da un limite di frequenza (401 "Invalid Crumb", 429) o da un ticker inesistente (404).
 - `portafoglio.txt` è facoltativo, un ticker per riga, `#` per i commenti. Non è nel repository: le posizioni non vanno nel repository pubblico.
 - Nei parziali (`partials/*.json`) i titoli in errore hanno `error` con la causa originale, più `error_type` e `tentativi`. Prima `error` valeva "irrecuperabile dopo i retry".
