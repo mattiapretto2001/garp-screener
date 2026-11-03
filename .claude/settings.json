@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Microsoft_365__read_resource",
+      "mcp__Microsoft_365__sharepoint_search",
+      "mcp__Microsoft_365__sharepoint_folder_search",
+      "mcp__Microsoft_365__sharepoint_upload_file",
+      "mcp__Microsoft_365__sharepoint_update_file",
+      "mcp__Microsoft_365__sharepoint_create_folder",
+      "mcp__Google_Drive__search_files",
+      "mcp__Google_Drive__read_file_content",
+      "mcp__Google_Drive__get_file_metadata",
+      "mcp__Google_Drive__download_file_content",
+      "mcp__Google_Drive__list_recent_files",
+      "mcp__Google_Drive__create_file",
+      "mcp__Google_Sheets__get_spreadsheet",
+      "mcp__Google_Sheets__get_values",
+      "mcp__Google_Sheets__update_values",
+      "mcp__Google_Sheets__append_values",
+      "mcp__Google_Sheets__update_formulas",
+      "mcp__Google_Sheets__update_spreadsheet"
+    ]
+  }
+}
