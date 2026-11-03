@@ -48,7 +48,7 @@ jobs:
           path: universe.json
           retention-days: 2
 
-  # 10 job paralleli, ognuno su un server con IP diverso: aggira i limiti
+  # 20 job paralleli (erano 10 fino al 01/11/2026), ognuno su un server con IP diverso: aggira i limiti
   # di frequenza di Yahoo Finance sull'universo completo (~10.000 titoli con le mid/small europee)
   shard:
     needs: universe
@@ -57,7 +57,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -78,14 +78,14 @@ jobs:
       - name: Run GARP screener (shard)
         env:
           SHARD: ${{ matrix.shard }}
-          SHARDS: "10"
+          SHARDS: "20"
           UNIVERSE_FILE: universe.json
         run: python garp_screener.py
 
       - name: Run Moonshot screener (shard)
         env:
           SHARD: ${{ matrix.shard }}
-          SHARDS: "10"
+          SHARDS: "20"
           UNIVERSE_FILE: universe.json
         run: python moonshot_screener.py
 
