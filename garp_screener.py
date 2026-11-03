@@ -20,13 +20,18 @@ Pensato per girare su GitHub Actions ogni sera dopo la chiusura di Wall Street.
 """
 
 import json
+import logging
 import math
 import os
+import random
 import sys
+import threading
 import time
-import traceback  # noqa: retry/backoff usa time
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import Counter
 from datetime import date, datetime, timezone
+from types import SimpleNamespace
 
 import pandas as pd
 import requests
@@ -73,7 +78,215 @@ CACHE_KEYS = [
     "sharesOutstanding", "shortPercentOfFloat", "heldPercentInsiders",
     "heldPercentInstitutions", "numberOfAnalystOpinions", "targetMeanPrice",
     "recommendationMean", "forwardEps", "trailingEps", "enterpriseValue",
+    # dal 03/11/2026: distingue azioni da fondi/ETF nei controlli di qualità
+    "quoteType",
 ]
+
+# ----------------------------- Qualità dei dati -----------------------------
+# Dal 03/11/2026 (piano di lavoro, fase 1) un titolo senza dati sufficienti è
+# "non valutabile" (errore con tipo), non bocciato in silenzio.
+
+ERROR_THRESHOLD = 0.15      # sopra questa quota di errori il report lo scrive in testa
+RETRY_BASE_PAUSE = 15.0     # backoff esponenziale con jitter tra le passate
+RETRY_MAX_PAUSE = 120.0
+
+
+class DataError(Exception):
+    """Errore di dati con tipo esplicito (info_vuoto, campi_mancanti)."""
+
+    def __init__(self, tipo, msg):
+        super().__init__(msg)
+        self.tipo = tipo
+
+
+def classify_error(err):
+    """Tipo di errore da un'eccezione o da un messaggio: limite_frequenza,
+    timeout, non_trovato, info_vuoto, campi_mancanti, rete, altro."""
+    tipo = getattr(err, "tipo", None)
+    if tipo:
+        return tipo
+    if isinstance(err, BaseException):
+        m = f"{type(err).__name__}: {err}".lower()
+    else:
+        m = str(err).lower()
+    if m.startswith(("info_vuoto", "info vuoto")):
+        return "info_vuoto"
+    if m.startswith(("campi_mancanti", "campi mancanti")):
+        return "campi_mancanti"
+    if any(k in m for k in ("404", "quote not found", "delisted", "no data found",
+                            "no timezone found")):
+        return "non_trovato"
+    # 401 "Invalid Crumb" / "unable to access this feature": Yahoo blocca l'IP
+    if any(k in m for k in ("429", "too many requests", "rate limit", "ratelimit",
+                            "401", "unauthorized", "invalid crumb")):
+        return "limite_frequenza"
+    if any(k in m for k in ("timeout", "timed out", "curl: (28)")):
+        return "timeout"
+    if "not found" in m:
+        return "non_trovato"
+    if any(k in m for k in ("connection", "curl: (", "ssl", "resolve host", "network")):
+        return "rete"
+    if "irrecuperabile" in m:  # parziali scritti prima del 03/11/2026
+        return "sconosciuto"
+    return "altro"
+
+
+class _YfErrorLog(logging.Handler):
+    """yfinance non solleva gli errori HTTP di .info (429, 401, 404): li scrive
+    nel suo logger e restituisce un dizionario quasi vuoto. Qui li teniamo,
+    per thread, per risalire alla causa di un .info vuoto."""
+
+    def __init__(self):
+        super().__init__(level=logging.WARNING)
+        self.local = threading.local()
+
+    def emit(self, record):
+        try:
+            msgs = getattr(self.local, "msgs", None)
+            if msgs is not None and len(msgs) < 20:
+                msgs.append(record.getMessage()[:300])
+        except Exception:
+            pass
+
+    def start(self):
+        self.local.msgs = []
+
+    def take(self):
+        msgs, self.local.msgs = getattr(self.local, "msgs", None) or [], None
+        return msgs
+
+
+YF_LOG = _YfErrorLog()
+logging.getLogger("yfinance").addHandler(YF_LOG)
+
+
+def fetch_info(tk):
+    """tk.info con la causa degli errori HTTP nascosti da yfinance.
+    Ritorna (info, messaggi di errore di yfinance)."""
+    YF_LOG.start()
+    try:
+        info = tk.info or {}
+    finally:
+        msgs = YF_LOG.take()
+    return info, msgs
+
+
+def check_info(info, yf_msgs=()):
+    """Solleva DataError se .info è vuoto o, per un'azione, mancano i campi
+    chiave (settore, capitalizzazione, prezzo). Fondi ed ETF (quoteType non
+    EQUITY) restano bocciati come prima: non sono errori di dati.
+    `yf_msgs` (da fetch_info) precisa la causa di un .info vuoto."""
+    meaningful = [k for k, v in (info or {}).items()
+                  if v is not None and k != "trailingPegRatio"]
+    if len(meaningful) < 3:
+        tipi = [classify_error(m) for m in yf_msgs]
+        for tipo in ("non_trovato", "limite_frequenza", "timeout", "rete"):
+            if tipo in tipi:
+                raise DataError(tipo, f"{tipo}: .info vuoto; yfinance: "
+                                      f"{yf_msgs[tipi.index(tipo)][:200]}")
+        raise DataError("info_vuoto", "info_vuoto: .info vuoto (ticker inesistente, "
+                                      "delistato o risposta vuota di Yahoo)")
+    qt = info.get("quoteType")
+    if qt and qt != "EQUITY":
+        return
+    price = info.get("currentPrice") or info.get("regularMarketPrice")
+    missing = [k for k, v in (("sector", info.get("sector")),
+                              ("marketCap", info.get("marketCap")),
+                              ("price", price)) if v is None]
+    if missing:
+        raise DataError("campi_mancanti", f"campi_mancanti: {', '.join(missing)}")
+
+
+def error_result(symbol, index_name, err, **extra):
+    """Risultato di un titolo non valutabile, con la causa originale."""
+    return {"ticker": symbol, "index": index_name,
+            "error": str(err) or type(err).__name__,
+            "error_type": classify_error(err), "passed": False, **extra}
+
+
+def fetch_with_retry(getter, tries=3, base_delay=2.0):
+    """Legge un dato Yahoo ripetendo (backoff con jitter) se vuoto o in errore.
+    Ritorna (valore o None, ultima eccezione o None)."""
+    last = None
+    for i in range(tries):
+        try:
+            v = getter()
+            if v is not None and not getattr(v, "empty", False):
+                return v, None
+        except Exception as e:
+            last = e
+        if i < tries - 1:
+            time.sleep(base_delay * (2 ** i) + random.uniform(0, base_delay))
+    return None, last
+
+
+def _read_tickers(path):
+    if not os.path.exists(path):
+        return []
+    with open(path) as f:
+        return [l.split("#")[0].strip() for l in f if l.split("#")[0].strip()]
+
+
+def watchlist_tickers():
+    """Titoli seguiti da vicino: watchlist.txt più portafoglio.txt (opzionale,
+    non versionato di default: le posizioni restano fuori dal repo pubblico)."""
+    out = []
+    for p in ("watchlist.txt", "portafoglio.txt"):
+        for t in _read_tickers(p):
+            if t not in out:
+                out.append(t)
+    return out
+
+
+def previous_passed(results_dir):
+    """Promossi dell'ultimo report (results*/latest.json) di quello screener."""
+    try:
+        with open(os.path.join(results_dir, "latest.json")) as f:
+            return {p["ticker"] for p in json.load(f).get("passed", [])}
+    except Exception:
+        return set()
+
+
+def priority_tickers(results_dir):
+    """Watchlist, portafoglio e promossi di ieri: hanno un tentativo in più."""
+    return set(watchlist_tickers()) | previous_passed(results_dir)
+
+
+def _etype(r):
+    return r.get("error_type") or classify_error(r.get("error", ""))
+
+
+def quality_summary(results, prev_passed):
+    """Campi aggiunti al report dal 03/11/2026 (vedi docs/CAMBI_FORMATO.md)."""
+    err = {r["ticker"]: r for r in results if r.get("error")}
+    per_tipo = Counter(_etype(r) for r in err.values())
+    n = len(results)
+    wl = [{"ticker": t, "tipo": _etype(err[t]), "errore": err[t].get("error")}
+          for t in watchlist_tickers() if t in err]
+    return {
+        "errori_per_tipo": dict(sorted(per_tipo.items(), key=lambda kv: -kv[1])),
+        "errori_pct": round(len(err) / n, 4) if n else 0.0,
+        "sospesi_per_dati": sorted(t for t in prev_passed if t in err),
+        "watchlist_non_valutabili": wl,
+    }
+
+
+def quality_md_lines(q, errors, analyzed):
+    """Righe di testa del latest.md sul controllo di qualità dei dati."""
+    lines = []
+    if analyzed and errors / analyzed > ERROR_THRESHOLD:
+        tipi = ", ".join(f"{k} {v}" for k, v in q["errori_per_tipo"].items())
+        lines += [f"> ⚠️ **Qualità dati insufficiente:** {errors} titoli su {analyzed} "
+                  f"non valutabili ({errors / analyzed * 100:.1f}%, soglia "
+                  f"{ERROR_THRESHOLD * 100:.0f}%). Per tipo: {tipi}. "
+                  "Promossi e usciti di oggi vanno letti con cautela.", ""]
+    if q["watchlist_non_valutabili"]:
+        det = "; ".join(f"{w['ticker']} ({w['tipo']})" for w in q["watchlist_non_valutabili"])
+        lines += [f"> ⚠️ **Titoli in watchlist/portafoglio non valutabili oggi:** {det}", ""]
+    if q["sospesi_per_dati"]:
+        lines += ["Sospesi per dati (promossi ieri, oggi non valutabili: non è una "
+                  "bocciatura): " + ", ".join(q["sospesi_per_dati"]), ""]
+    return lines
 
 WIKI = "https://en.wikipedia.org/wiki/"
 
@@ -419,9 +632,10 @@ def screen_ticker(symbol, index_name):
     """Stage 1: filtri da .info. Ritorna dict con esito e metriche."""
     try:
         tk = yf.Ticker(symbol)
-        info = tk.info or {}
+        info, yf_msgs = fetch_info(tk)
         if info.get("marketCap") is not None or info.get("regularMarketPrice") is not None:
             INFO_CACHE[symbol] = {k: info.get(k) for k in CACHE_KEYS}
+        check_info(info, yf_msgs)  # .info vuoto o senza campi chiave: non valutabile
 
         sector = info.get("sector")
         mcap = info.get("marketCap")
@@ -468,7 +682,13 @@ def screen_ticker(symbol, index_name):
 
         # Stage 2 (solo per chi passa lo stage 1): CAGR pluriennale dei ricavi
         if stage1_pass:
-            cagr = sales_cagr_multi_year(tk)
+            inc, inc_err = fetch_with_retry(lambda: tk.income_stmt)
+            if inc is None:
+                # senza bilancio annuale il titolo non è valutabile, non bocciato
+                return error_result(symbol, index_name, inc_err or DataError(
+                    "campi_mancanti", "campi_mancanti: bilancio annuale (income_stmt)"),
+                    name=result["name"], stage1_pass=True)
+            cagr = sales_cagr_multi_year(SimpleNamespace(income_stmt=inc))
             result["sales_cagr_multi_year"] = cagr
             result["checks"]["sales_5y_ok"] = (
                 cagr is not None and cagr > CRITERIA["sales_growth_5y_min"]
@@ -486,45 +706,70 @@ def screen_ticker(symbol, index_name):
 
         return result
     except Exception as e:
-        return {"ticker": symbol, "index": index_name, "error": str(e), "passed": False}
+        return error_result(symbol, index_name, e)
 
 
 # ----------------------------- Esecuzione con retry -----------------------------
 
 
-def run_screen(universe, fn, workers=MAX_WORKERS, retries=2, pause=25):
+def run_screen(universe, fn, workers=MAX_WORKERS, retries=2, pause=RETRY_BASE_PAUSE,
+               priority=None):
     """Esegue fn(ticker, indice) su tutto l'universo con retry sugli errori:
     Yahoo limita le richieste massive, quindi i ticker falliti vengono
-    ritentati (fino a `retries` volte) a concorrenza ridotta dopo una pausa."""
+    ritentati (fino a `retries` volte) a concorrenza ridotta, con pausa a
+    backoff esponenziale e jitter. I ticker in `priority` (portafoglio,
+    watchlist, promossi di ieri) hanno un tentativo in più. Un titolo che
+    resta in errore conserva la causa originale (`error`, `error_type`)."""
     results = {}
     pending = dict(universe)
-    for attempt in range(retries + 1):
+    priority = set(priority or ())
+    last_err = {}
+    attempt = 0
+    while pending:
         errored = {}
-        w = workers if attempt == 0 else 4
+        w = workers if attempt == 0 else (4 if attempt <= retries else 2)
         with ThreadPoolExecutor(max_workers=w) as ex:
             futures = {ex.submit(fn, t, i): t for t, i in pending.items()}
             done = 0
             for fut in as_completed(futures):
-                r = fut.result()
+                t = futures[fut]
+                try:
+                    r = fut.result()
+                except Exception as e:  # fn non dovrebbe sollevare, per sicurezza
+                    r = error_result(t, pending.get(t), e)
                 done += 1
                 if done % 500 == 0:
                     print(f"  passata {attempt+1}: {done}/{len(pending)}…")
-                t = r.get("ticker")
                 if r.get("error"):
-                    errored[t] = pending.get(t)
+                    r.setdefault("error_type", classify_error(r["error"]))
+                    r["tentativi"] = attempt + 1
+                    no_retry = r.pop("_no_retry", False)
+                    last_err[t] = r
+                    if not no_retry:
+                        errored[t] = pending.get(t)
                 else:
                     results[t] = r
-        if not errored:
-            break
-        print(f"  {len(errored)} ticker in errore alla passata {attempt+1}")
-        pending = errored
-        if attempt < retries:
-            print(f"  nuovo tentativo tra {pause}s a concorrenza ridotta…")
-            time.sleep(pause)
-    for t, i in pending.items():
+                    last_err.pop(t, None)
+        if errored:
+            tipi = dict(Counter(last_err[t]["error_type"] for t in errored))
+            print(f"  {len(errored)} ticker in errore alla passata {attempt+1}: {tipi}")
+        attempt += 1
+        if attempt <= retries:
+            pending = errored
+        elif attempt == retries + 1:
+            pending = {t: i for t, i in errored.items() if t in priority}
+            if pending:
+                print(f"  tentativo extra per {len(pending)} titoli prioritari")
+        else:
+            pending = {}
+        if pending:
+            delay = min(RETRY_MAX_PAUSE, pause * (2 ** (attempt - 1)))
+            delay += random.uniform(0, pause)
+            print(f"  nuovo tentativo tra {delay:.0f}s a concorrenza ridotta…")
+            time.sleep(delay)
+    for t, r in last_err.items():
         if t not in results:
-            results[t] = {"ticker": t, "index": i,
-                          "error": "irrecuperabile dopo i retry", "passed": False}
+            results[t] = r
     return list(results.values())
 
 
@@ -611,15 +856,9 @@ def make_report(results, universe_size, started):
     today = date.today().isoformat()
 
     # Confronto con il run precedente per individuare i NUOVI ingressi
-    prev_tickers = set()
     latest_path = os.path.join(RESULTS_DIR, "latest.json")
-    if os.path.exists(latest_path):
-        try:
-            with open(latest_path) as f:
-                prev = json.load(f)
-            prev_tickers = {p["ticker"] for p in prev.get("passed", [])}
-        except Exception:
-            pass
+    prev_tickers = previous_passed(RESULTS_DIR)
+    quality = quality_summary(results, prev_tickers)
     new_today = [r for r in passed if r["ticker"] not in prev_tickers]
     dropped = sorted(prev_tickers - {r["ticker"] for r in passed})
 
@@ -639,6 +878,7 @@ def make_report(results, universe_size, started):
         "passed": passed,
         "near_miss_count": len(near_miss),
         "near_miss": near_miss[:60],
+        **quality,
     }
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -656,8 +896,10 @@ def make_report(results, universe_size, started):
     lines = [
         f"# Screening GARP — {today}",
         "",
+        *quality_md_lines(quality, errors, len(results)),
         f"Universo: {universe_size} titoli | Superano tutti i filtri: **{len(passed)}**"
-        f" | Nuovi oggi: **{len(new_today)}** | Usciti: {len(dropped)}",
+        f" | Nuovi oggi: **{len(new_today)}** | Usciti: {len(dropped)}"
+        f" | Non valutabili: {errors}",
         "",
         "| Ticker | Nome | Indice | Settore | PEG | ROE | D/E | Ricavi q/q | EPS q/q | CAGR ricavi | Nuovo |",
         "|---|---|---|---|---|---|---|---|---|---|---|",
@@ -707,7 +949,7 @@ def main():
         universe = load_universe_checked()
         sub = shard_of(universe, shard, shards)
         print(f"Job parallelo {shard+1}/{shards}: {len(sub)} ticker")
-        results = run_screen(sub, screen_ticker)
+        results = run_screen(sub, screen_ticker, priority=priority_tickers(RESULTS_DIR))
         save_cache()  # per il moonshot screener nello stesso job
         os.makedirs("partials", exist_ok=True)
         with open(os.path.join("partials", f"info-{shard}.json"), "w") as f:
@@ -716,11 +958,12 @@ def main():
             json.dump({"universe_size": len(universe), "results": results},
                       f, default=str)
         errors = sum(1 for r in results if r.get("error"))
-        print(f"Shard completato: {len(results)} risultati, {errors} errori")
+        tipi = dict(Counter(r.get("error_type") for r in results if r.get("error")))
+        print(f"Shard completato: {len(results)} risultati, {errors} errori {tipi}")
         return
 
     universe = load_universe_checked()
-    results = run_screen(universe, screen_ticker)
+    results = run_screen(universe, screen_ticker, priority=priority_tickers(RESULTS_DIR))
     save_cache()
     make_report(results, len(universe), started)
 

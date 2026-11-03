@@ -167,7 +167,14 @@ def screen_ticker(symbol, index_name):
         info = INFO_CACHE.get(symbol)
         if not info:
             tk = yf.Ticker(symbol)
-            info = tk.info or {}
+            info, yf_msgs = base.fetch_info(tk)
+            base.check_info(info, yf_msgs)  # .info vuoto o senza campi chiave: non valutabile
+        else:
+            try:
+                base.check_info(info)
+            except base.DataError as e:
+                # dato già ritentato dal GARP nello stesso job: inutile ripetere
+                return base.error_result(symbol, index_name, e, _no_retry=True)
 
         sector = info.get("sector")
         mcap = info.get("marketCap")
@@ -303,7 +310,7 @@ def screen_ticker(symbol, index_name):
         })
         return result
     except Exception as e:
-        return {"ticker": symbol, "index": index_name, "error": str(e), "passed": False}
+        return base.error_result(symbol, index_name, e)
 
 
 def _refetch_missing_multi_year(results):
@@ -338,14 +345,9 @@ def make_report(results, universe_size, started):
     )
 
     today = date.today().isoformat()
-    prev_tickers = set()
     latest_path = os.path.join(RESULTS_DIR, "latest.json")
-    if os.path.exists(latest_path):
-        try:
-            with open(latest_path) as f:
-                prev_tickers = {p["ticker"] for p in json.load(f).get("passed", [])}
-        except Exception:
-            pass
+    prev_tickers = base.previous_passed(RESULTS_DIR)
+    quality = base.quality_summary(results, prev_tickers)
     new_today = [r["ticker"] for r in passed if r["ticker"] not in prev_tickers]
     dropped = sorted(prev_tickers - {r["ticker"] for r in passed})
 
@@ -363,6 +365,7 @@ def make_report(results, universe_size, started):
         "dropped_since_yesterday": dropped,
         "passed_old_criteria": sum(1 for r in passed if not r.get("criteri_nuovi")),
         "passed": passed[:100],
+        **quality,
     }
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -378,7 +381,9 @@ def make_report(results, universe_size, started):
     lines = [
         f"# Screening Moonshot — {today}",
         "",
-        f"Universo: {universe_size} | Candidate: **{len(passed)}** | Nuove oggi: **{len(new_today)}** | Uscite: {len(dropped)}",
+        *base.quality_md_lines(quality, errors, len(results)),
+        f"Universo: {universe_size} | Candidate: **{len(passed)}** | Nuove oggi: **{len(new_today)}** | Uscite: {len(dropped)}"
+        f" | Non valutabili: {errors}",
         "",
         "† = passa solo coi criteri nuovi del 10/10/2026 (Europa mid/small, settori, debito/EBITDA, liquidità); ⟳ = ciclico",
         "",
@@ -435,7 +440,8 @@ def main():
             sub = base.shard_of(universe, shard, shards)
         print(f"Job parallelo {shard+1}/{shards}: {len(sub)} ticker "
               f"(cache GARP: {len(INFO_CACHE)})")
-        results = base.run_screen(sub, screen_ticker, workers=MAX_WORKERS)
+        results = base.run_screen(sub, screen_ticker, workers=MAX_WORKERS,
+                                  priority=base.priority_tickers(RESULTS_DIR))
         os.makedirs("partials", exist_ok=True)
         with open(os.path.join("partials", f"moon-{shard}.json"), "w") as f:
             json.dump({"universe_size": universe_size, "results": results},
@@ -445,7 +451,8 @@ def main():
         return
 
     universe = base.load_universe_checked()
-    results = base.run_screen(universe, screen_ticker, workers=MAX_WORKERS)
+    results = base.run_screen(universe, screen_ticker, workers=MAX_WORKERS,
+                              priority=base.priority_tickers(RESULTS_DIR))
     make_report(results, len(universe), started)
 
 
