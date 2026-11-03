@@ -11,7 +11,8 @@ Non è un filtro "passa/non passa" sull'universo: è un MONITOR su una lista di
 temi. Due fonti di ticker:
   1. lista curata in THEMES (i nomi rilevanti, anche europei/asiatici);
   2. scoperta automatica: nei job paralleli, dalla cache .info del GARP, i
-     titoli dell'universo con industry tematica e mcap >= DISCOVERY_MCAP_MIN.
+     titoli dell'universo con industry tematica e mcap >= DISCOVERY_MCAP_MIN
+     (i DISCOVERY_MAX più grandi, ordinati per capitalizzazione).
 
 Ogni titolo riceve un PROFILO, perché un'utility e un reattore pre-ricavi non
 si misurano con lo stesso metro:
@@ -34,9 +35,7 @@ La lettura qualitativa (catalizzatori, licenze, contratti) la fa Claude.
 import json
 import os
 import sys
-import time
 import traceback
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timezone
 
 import yfinance as yf
@@ -45,8 +44,9 @@ import garp_screener as base
 
 RESULTS_DIR = "results-temi"
 MAX_WORKERS = 4
-DISCOVERY_MCAP_MIN = 1e9
-DISCOVERY_MAX = 40            # tetto ai titoli scoperti (i più grandi), per i tempi del job
+# dal 03/11/2026 (era 1 Mld e 40 titoli): entrano anche le piccole dei temi
+DISCOVERY_MCAP_MIN = 300e6
+DISCOVERY_MAX = 120           # tetto ai titoli scoperti (i più grandi), per i tempi del job
 
 CRITERIA = {
     "pre_revenue_max": 50e6,          # sotto: profilo pre-ricavi
@@ -116,9 +116,15 @@ def _dilution_cagr(tk):
 def evaluate(symbol, themes):
     try:
         tk = yf.Ticker(symbol)
-        info = tk.info or {}
+        info, yf_msgs = base.fetch_info(tk)
         if info.get("marketCap") is None and info.get("regularMarketPrice") is None:
-            return {"ticker": symbol, "themes": themes, "error": "nessun dato"}
+            try:
+                base.check_info(info, yf_msgs)  # precisa la causa se .info è vuoto
+            except base.DataError as e:
+                return base.error_result(symbol, None, e, themes=themes)
+            return base.error_result(symbol, None, base.DataError(
+                "campi_mancanti", "campi_mancanti: né capitalizzazione né prezzo"),
+                themes=themes)
 
         mcap = info.get("marketCap")
         rev = info.get("totalRevenue")
@@ -222,7 +228,7 @@ def evaluate(symbol, themes):
             "score": score,
         }
     except Exception as e:
-        return {"ticker": symbol, "themes": themes, "error": str(e)}
+        return base.error_result(symbol, None, e, themes=themes)
 
 
 def discover_from_cache():
@@ -245,6 +251,14 @@ def discover_from_cache():
     return found
 
 
+def _previous_tracked():
+    try:
+        with open(os.path.join(RESULTS_DIR, "latest.json")) as f:
+            return {r["ticker"] for r in json.load(f).get("tracked", [])}
+    except Exception:
+        return set()
+
+
 def build_watch(discovered):
     watch = {}
     for key, th in THEMES.items():
@@ -255,23 +269,10 @@ def build_watch(discovered):
     return {t: sorted(k) for t, k in watch.items()}
 
 
-def run(watch):
-    results = {}
-    pending = dict(watch)
-    for attempt in range(3):
-        errored = {}
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS if attempt == 0 else 2) as ex:
-            futs = {ex.submit(evaluate, t, k): t for t, k in pending.items()}
-            for fut in as_completed(futs):
-                r = fut.result()
-                if r.get("error"):
-                    errored[r["ticker"]] = pending[r["ticker"]]
-                results[r["ticker"]] = r
-        if not errored:
-            break
-        pending = errored
-        time.sleep(20)
-    return list(results.values())
+def run(watch, priority=None):
+    """Stessi retry del GARP: backoff esponenziale con jitter, causa
+    dell'errore conservata, un tentativo in più per i titoli prioritari."""
+    return base.run_screen(watch, evaluate, workers=MAX_WORKERS, priority=priority)
 
 
 def make_report(results, curated, started):
@@ -280,14 +281,17 @@ def make_report(results, curated, started):
     greens = {r["ticker"] for r in ok if r["light"] == "verde"}
 
     latest_path = os.path.join(RESULTS_DIR, "latest.json")
-    prev_greens = set()
+    prev_greens, prev_tracked = set(), set()
     if os.path.exists(latest_path):
         try:
             with open(latest_path) as f:
                 prev = json.load(f)
             prev_greens = {r["ticker"] for r in prev.get("tracked", []) if r.get("light") == "verde"}
+            prev_tracked = {r["ticker"] for r in prev.get("tracked", [])}
         except Exception:
             pass
+    # sospesi_per_dati: seguiti ieri, oggi non valutabili
+    quality = base.quality_summary(results, prev_tracked)
 
     order = {"verde": 0, "giallo": 1, "rosso": 2}
     ok.sort(key=lambda r: (order[r["light"]], -r["score"], -(r.get("market_cap") or 0)))
@@ -308,6 +312,7 @@ def make_report(results, curated, started):
         "new_green": sorted(greens - prev_greens),
         "lost_green": sorted(prev_greens - greens),
         "tracked": ok,
+        **quality,
     }
     os.makedirs(RESULTS_DIR, exist_ok=True)
     for p in (os.path.join(RESULTS_DIR, f"{today}.json"), latest_path):
@@ -319,6 +324,7 @@ def make_report(results, curated, started):
 
     dot = {"verde": "🟢", "giallo": "🟡", "rosso": "🔴"}
     lines = [f"# Temi strutturali — {today}", "",
+             *base.quality_md_lines(quality, len(errors), len(results)),
              f"Seguiti: {len(ok)} | Verdi: **{len(greens)}** | "
              f"Nuovi verdi: {', '.join(report['new_green']) or '—'} | "
              f"Persi: {', '.join(report['lost_green']) or '—'}", ""]
@@ -370,7 +376,9 @@ def main():
         discovered = {t: discovered[t]["themes"] for t in top[:DISCOVERY_MAX]}
     watch = build_watch(discovered)
     print(f"Titoli da valutare: {len(watch)} ({len(curated)} curati)")
-    make_report(run(watch), curated, started)
+    priority = set(base.watchlist_tickers()) | {
+        t for t in watch if t in _previous_tracked()}
+    make_report(run(watch, priority), curated, started)
 
 
 if __name__ == "__main__":
