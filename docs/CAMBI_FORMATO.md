@@ -3,6 +3,47 @@
 Registro dei cambi a `results*/latest.json`, `latest.md` e `snapshots/` che interessano la routine sul PC (`report-azionario-mattina`).
 Regola: i campi esistenti non si rinominano e non si tolgono, si aggiungono solo campi nuovi.
 
+## 03/11/2026: Svolta versione B1 (ramo `claude/svolta-b1`)
+
+Lo screener Svolta segue il backtest del 03/11/2026: la versione completa non batte l'universo fuori campione, regge solo il nucleo "B1".
+Nessun campo di `results-svolta/latest.json` è stato tolto o rinominato.
+
+### Campi nuovi in `results-svolta/latest.json`
+
+| Campo | Dove | Significato |
+|---|---|---|
+| `versione_criteri` | in testa | `"B1 (backtest del 03/11/2026)"`. |
+| `da_radiografare` | in testa | Ticker da analizzare: tutti i promossi se sono 8 o meno, altrimenti i primi 8 per punteggio. |
+| `regola_radiografia`, `punteggio_uso` | in testa | Testo che spiega la regola degli 8 e che il punteggio serve solo a ordinare. |
+| `da_radiografare` | in ogni promosso | `true` se il titolo è tra quelli da radiografare. |
+| `avvisi` | in ogni titolo | Lista di avvisi di rischio (non escludono): diluizione > 10% l'anno, cassa per meno di 2 anni al consumo attuale. |
+| `cosa_fa_en` | in ogni titolo | Descrizione breve originale in inglese. |
+| `margine_lordo_metodo` | in ogni titolo | Come è misurata `margine_lordo_variazione` ("12 mesi su 12 mesi", "trimestre sullo stesso dell'anno prima", "anno fiscale"). |
+| `margine_lordo_trimestre` | in ogni titolo | Margine lordo dell'ultimo trimestre. |
+| `margine_operativo_trimestre_2fa` | in ogni titolo | Margine operativo di due trimestri prima (per il controllo "ultimo trimestre non peggiore"). |
+| `primo_utile` | in ogni titolo e in `checks` | Solo informazione: EPS 12 mesi vicino a zero e stima dell'anno prossimo positiva. Non è più un filtro né un bonus. |
+| `revisioni_nota` | in ogni titolo | "non verificabile storicamente: solo informazione e punteggio ridotto". |
+
+### Cambi di significato (nessun campo tolto)
+
+1. **`hard_checks`** ora contiene solo `mcap_ok`, `settore_ok`, `svolta_ok`, `crescita_ok`, `margine_lordo_ok`. `passed`, `failed_checks` e `near_miss` si basano solo su questi.
+2. **`checks`**: `revisioni_ok`, `prezzo_ok`, `runway_ok`, `diluizione_ok`, `leva_ok`, `copertura_ok` restano, ma sono **solo informativi** (non escludono).
+3. **`checks.mcap_ok`**: capitalizzazione 1-15 Mld$ (era 200 M$–20 Mld$).
+4. **`checks.crescita_ok`**: ricavi dell'ultimo trimestre +20%/+60% (era fino a +100%).
+5. **`checks.svolta_ok`**: margine operativo 12 mesi +5 punti in un anno (o ultimo trimestre +8 sullo stesso dell'anno prima), livello dei **12 mesi** tra -15% e +20% (prima era l'ultimo trimestre), ultimo trimestre non peggiore di due trimestri prima. Non vale più la strada del "primo utile" né il requisito di utile atteso l'anno prossimo.
+6. **`checks.margine_lordo_ok`** e **`margine_lordo`**: `margine_lordo` è ora il margine lordo degli **ultimi 12 mesi** (prima: ultimo trimestre; quello è in `margine_lordo_trimestre`). Soglia 55% (40% industria/hardware) e **nessun calo** rispetto a 4 trimestri prima; non vale più la strada "≥ 25% e in salita".
+7. **`cosa_fa`**: ora in italiano semplice (traduzione dei primi termini; il resto può restare in inglese). L'originale è in `cosa_fa_en`.
+8. **`punteggio`, `punteggio_100`**: servono solo a ordinare, nessuna soglia d'acquisto (tolta la ★ e la soglia 6,5 dal Markdown). Somma delle voci su 80 punti riportata su base 100.
+9. **`punteggio_dettaglio`**: stesse chiavi. `revisioni` vale al massimo 5 (era 15). `posizione_prezzo` vale 10 se il prezzo è 1,2-1,8 volte il minimo a 52 settimane, altrimenti 0, con -3 sopra il 95% del massimo. `prezzo_crescita`, `scoperta` e `penalita` valgono sempre 0 (non più nel punteggio). In `margine_operativo` non c'è più il bonus per il primo utile o per il passaggio da perdita a utile.
+10. **`criteria`**: nuove chiavi `x_52w_low_score_min`, `x_52w_low_score_max`, `pct_of_52w_high_penalty`; `mcap_ideal_min_usd`, `mcap_ideal_max_usd`, `gross_margin_floor_rising`, `insider_sell_heavy` restano con valore `null` (non più usate). `mcap_min_usd`/`mcap_max_usd` = 1e9/15e9, `rev_growth_max` = 0,60, `gross_margin_drop_max` = 0.
+11. Il primo filtro sulla cache non scarta più per posizione del prezzo né per numero di analisti. Le stime mancanti non sono più un errore da ritentare (contano solo nel punteggio).
+
+### `latest.md` (Svolta)
+
+- In testa: è un elenco da radiografare, non da comprare; risultati del backtest (+10,5 / +22 / -6,7 punti annui sull'universo nel 2012-19, 2020-24, 2025-26); regola degli 8; ricontrollo ogni trimestre.
+- Riga "Da radiografare (N): ..." e segno "da radiografare" accanto ai titoli in classifica.
+- Riga "⚠ Avvisi" sotto i titoli con diluizione o cassa insufficiente.
+
 ## 03/11/2026: Fase 1, qualità dei dati (ramo `claude/fase1-qualita-dati`)
 
 ### Campi nuovi in `results/latest.json` (GARP) e `results-moonshot/latest.json` (Moonshot)

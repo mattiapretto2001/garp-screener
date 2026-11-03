@@ -1,54 +1,47 @@
 #!/usr/bin/env python3
 """
-Screener Svolta — aziende di qualità vicine a un punto di svolta
-=================================================================
-Cerca il profilo di Spotify nel 2024 (primo anno di utili) e di Aehr Test
-Systems nel 2023-25 (piccolo fornitore di un trend che partiva): ricavi che
-crescono e accelerano, margine lordo da azienda di qualità, margine operativo
-in netto miglioramento con gli utili che arrivano, stime degli analisti in
-rialzo prima del prezzo, bilancio che regge, e pochi occhi addosso.
+Screener Svolta (versione B1) — aziende di qualità con il margine operativo in svolta
+===================================================================================
+Cerca aziende con margine lordo da azienda di qualità, ricavi che crescono in
+modo sano e soprattutto un margine operativo che migliora partendo da livelli
+bassi (svolta in corso, non finita).
 
-Non produce tante posizioni piccole: produce una CLASSIFICA per punteggio di
-qualità 0-10; si studiano le prime 10-15 e si comprano solo le 3-4 migliori
-con punteggio >= 6,5 (nessuna se nessuna ci arriva).
-
-Criteri: bozza dell'utente integrata con l'analisi dei casi passati del
-03/11/2026 (358 titoli promossi da GARP/Moonshot/Temi o in watchlist, un solo
-trimestre di storia: soglie da verificare, non regole provate).
+Dal 03/11/2026 i criteri seguono il backtest storico 2012-2026 ("Backtest dei
+criteri Svolta", 03/11/2026): la versione completa a 8 criteri non batte
+l'universo fuori campione; regge solo il nucleo "B1" (filtro base + margine
+operativo in svolta): +10,5 punti annui sull'universo nel 2012-19 e +22 nel
+2020-24, ma -6,7 nel 2025-26. È un'ipotesi da seguire in tempo reale, non una
+regola provata: l'elenco è di candidate da RADIOGRAFARE, non da comprare.
 
 FILTRI OBBLIGATORI (HARD_CHECKS, tutti):
-  - capitalizzazione 200 M$ - 20 Mld$ (fascia ideale 1-15 Mld$, fuori -5 punti)
-  - tutti i settori tranne quelli a margine lordo strutturalmente basso
-    (costruzioni e impianti, auto, trasporto marittimo: LOW_MARGIN_INDUSTRIES)
-    e dei settori Energy e Basic Materials (COMMODITY_SECTORS: la svolta segue
-    il prezzo della materia prima)
-  - utile atteso l'anno prossimo (stima EPS +1y > 0, se c'è)
-  - svolta: margine operativo +5 punti in un anno (oppure ultimo trimestre +8
-    punti sullo stesso trimestre dell'anno prima), OPPURE primo utile (EPS 12
-    mesi <= 0 o quasi e stima dell'anno prossimo > 0), OPPURE risultato
-    operativo passato da negativo a positivo negli ultimi 4 trimestri;
-    in ogni caso margine operativo attuale tra -15% e +20% (svolta in corso,
-    non già finita) e ultimo trimestre non peggiore di due trimestri prima
-  - ricavi: crescita dell'ultimo trimestre sull'anno prima tra 20% e 100%
-  - margine lordo >= 55% (40% industriali/hardware), oppure >= 25% e in salita
-    di almeno 2 punti (il caso Spotify 2024), e comunque non sceso
-    di oltre 3 punti in un anno
-  - stime: EPS dell'anno prossimo rivisto almeno +5% in 90 giorni e nessun
-    taglio negli ultimi 30 giorni
-  - prezzo non già esploso: tra 60% e 97% del massimo a 52 settimane e non
-    oltre 2,5 volte il minimo a 52 settimane
-  - sopravvivenza: flusso di cassa positivo o cassa per almeno 2 anni,
-    diluizione < 10%/anno, debito netto/EBITDA < 3 se EBITDA > 0
-  - copertura: non più di 25 analisti (oltre, la svolta è già nota)
+  - margine lordo degli ultimi 12 mesi >= 55% (>= 40% industria/hardware) e
+    non in calo rispetto a 4 trimestri prima
+  - ricavi dell'ultimo trimestre tra +20% e +60% sullo stesso trimestre
+    dell'anno prima
+  - margine operativo in svolta: 12 mesi almeno +5 punti in un anno (oppure
+    ultimo trimestre +8 punti sullo stesso trimestre dell'anno prima); livello
+    dei 12 mesi tra -15% e +20%; ultimo trimestre non peggiore di due
+    trimestri prima
+  - capitalizzazione 1-15 Mld$
+  - esclusi i settori a margine lordo strutturalmente basso (costruzioni e
+    impianti, auto, trasporto marittimo, energia e materie prime: nel backtest
+    neutri, tenuti per coerenza) e i titoli con dati non valutabili
 
-PUNTEGGIO 0-100 (mostrato in decimi, 0-10):
-  traiettoria del margine operativo 25, margine lordo 15, crescita e
-  accelerazione dei ricavi 15, revisioni delle stime 15, bilancio 10, prezzo
-  rispetto alla crescita 10, posizione del prezzo 10, "non ancora scoperta"
-  (pochi analisti, insider in acquisto) fino a 5; penalità -5 se gli insider
-  vendono forte, -5 fuori dalla fascia 1-15 Mld$. Il primo utile da solo vale
-  poco (5 punti): nei casi passati non distingueva i vincitori. Tutte le
-  soglie sono in CRITERIA. "Candidata forte" da 65/100 (6,5/10).
+NON PIÙ FILTRI (solo informazione, avviso o punteggio): primo utile, solidità
+di cassa (avviso in `avvisi` se diluizione > 10%/anno o cassa per meno di 2
+anni), revisioni delle stime (punteggio ridotto, non verificabili storicamente),
+numero di analisti, posizione del prezzo.
+
+PUNTEGGIO 0-100 (mostrato in decimi, 0-10), solo per ORDINARE, nessuna soglia
+d'acquisto: traiettoria del margine operativo 25, margine lordo 10 + 5 se in
+salita di >= 2 punti, crescita dei ricavi 10 + 5 se in accelerazione, bilancio
+10 (flusso di cassa positivo, cassa netta), posizione del prezzo 10 (1,2-1,8
+volte il minimo a 52 settimane; -3 sopra il 95% del massimo), revisioni delle
+stime 5 (non testate). Somma su 80 punti riportata su base 100. Niente bonus
+per il primo utile.
+
+USO: se i promossi sono 8 o meno si considerano tutti, altrimenti i primi 8 per
+punteggio (`da_radiografare`); ricontrollo ogni trimestre, dopo i conti.
 
 Flusso su GitHub Actions (dopo GARP/Moonshot/Temi nello stesso shard):
   - SHARD=N: primo filtro sulla cache .info del GARP (partials/info-N.json,
@@ -84,54 +77,59 @@ MAX_WORKERS = 2          # stage 2: poche richieste parallele, Yahoo limita
 STAGE2_MAX = 90          # tetto ai candidati scaricati in dettaglio per shard
 PAUSE_BETWEEN = 1.0      # secondi di pausa tra un titolo e l'altro (per worker)
 TOP_N_MD = 15            # titoli in evidenza nel Markdown
-BUY_SCORE_MIN = 6.5      # soglia indicativa per l'acquisto (65/100)
+TOP_RADIOGRAFIA = 8      # se i promossi sono di più, si considerano i primi 8
 TIME_BUDGET = 540        # secondi massimi di stage 2 per shard (lo step ha 12 minuti)
 DEADLINE = [float("inf")]
+VERSIONE_CRITERI = "B1 (backtest del 03/11/2026)"
+SCORE_MAX_RAW = 80       # somma massima delle voci del punteggio, riportata su 100
 
 CRITERIA = {
-    "mcap_min_usd": 200e6,
-    "mcap_max_usd": 20e9,
-    "mcap_ideal_min_usd": 1e9,       # fascia migliore nei casi passati: 1-15 Mld $
-    "mcap_ideal_max_usd": 15e9,      # fuori: -5 punti (non esclude: Aehr partiva da 0,3 Mld)
-    # svolta
-    "op_margin_jump_min": 0.05,      # +5 punti in un anno (12 mesi o anno fiscale)
+    "mcap_min_usd": 1e9,             # backtest B1: 1-15 Mld $ (prima 200 M - 20 Mld con penalità)
+    "mcap_max_usd": 15e9,
+    # svolta del margine operativo
+    "op_margin_jump_min": 0.05,      # 12 mesi: +5 punti in un anno
     "op_margin_jump_q_min": 0.08,    # oppure +8 punti trimestre su trimestre di un anno prima
-    "op_margin_level_min": -0.15,    # svolta in corso...
+    "op_margin_level_min": -0.15,    # livello dei 12 mesi: svolta in corso...
     "op_margin_level_max": 0.20,     # ...non già finita
-    "eps_near_zero_yield": 0.01,     # EPS 12m / prezzo <= 1% = "vicino a zero"
+    "eps_near_zero_yield": 0.01,     # solo informativo (primo_utile): EPS 12m / prezzo <= 1%
     # ricavi
     "rev_growth_min": 0.20,
-    "rev_growth_max": 1.00,          # oltre: effetto base o lancio già nel prezzo
-    "accel_min": 0.03,               # +3 punti sul trimestre prima = accelerazione
+    "rev_growth_max": 0.60,          # backtest B1: +20/+60% (prima 100%)
+    "accel_min": 0.03,               # +3 punti sul trimestre prima = accelerazione (punteggio)
     "prefilter_slack": 0.75,         # primo filtro allargato (per i near miss)
-    # margine lordo
-    "gross_margin_min": 0.55,        # analisi casi passati (bozza utente: 35%)
-    "gross_margin_min_hw": 0.40,     # industriali / hardware (bozza utente: 25%)
-    "gross_margin_floor_rising": 0.25,  # minimo assoluto se il margine è in salita
-    "gross_margin_rising_min": 0.02, # "in salita": +2 punti in un anno
-    "gross_margin_drop_max": 0.03,   # scarta se sceso di oltre 3 punti
-    # revisioni
+    # margine lordo (12 mesi)
+    "gross_margin_min": 0.55,
+    "gross_margin_min_hw": 0.40,     # industria / hardware
+    "gross_margin_rising_min": 0.02, # "in salita": +2 punti in un anno (punteggio)
+    "gross_margin_drop_max": 0.0,    # "non in calo": nessuna discesa su 4 trimestri
+    # revisioni (solo punteggio e informazione: non verificabili storicamente)
     "revision_90d_min": 0.05,
-    "revision_30d_cut_max": -0.01,   # taglio negli ultimi 30 giorni oltre l'1%
-    # prezzo
-    "pct_of_52w_high_min": 0.60,
+    "revision_30d_cut_max": -0.01,
+    # prezzo (solo punteggio e informazione)
+    "x_52w_low_score_min": 1.2,      # 1,2-1,8 volte il minimo a 52 settimane: +10
+    "x_52w_low_score_max": 1.8,
+    "pct_of_52w_high_penalty": 0.95, # sopra il 95% del massimo: -3
+    "pct_of_52w_high_min": 0.60,     # solo per il check informativo prezzo_ok
     "pct_of_52w_high_max": 0.97,
     "x_52w_low_max": 2.5,
-    # sopravvivenza
+    # avvisi di rischio (non escludono)
     "runway_years_min": 2.0,
     "dilution_max": 0.10,
-    "net_debt_ebitda_max": 3.0,
-    # scoperta
+    "net_debt_ebitda_max": 3.0,      # solo check informativo leva_ok
+    # informativi
     "analysts_max": 25,
     "analysts_few": 8,
-    "insider_buy_share_min": 0.5,    # acquisti / (acquisti + vendite), in azioni
-    "insider_sell_heavy": 0.10,      # sotto: insider in forte vendita
+    "insider_buy_share_min": 0.5,
+    # chiavi della versione precedente, tenute per compatibilità del formato
+    # (non più usate: vedi docs/CAMBI_FORMATO.md)
+    "mcap_ideal_min_usd": None,
+    "mcap_ideal_max_usd": None,
+    "gross_margin_floor_rising": None,
+    "insider_sell_heavy": None,
 }
 
-# Controlli obbligatori: chi ne fallisce esattamente uno finisce nei near miss
-HARD_CHECKS = ["mcap_ok", "settore_ok", "svolta_ok", "crescita_ok", "margine_lordo_ok",
-               "revisioni_ok", "prezzo_ok", "runway_ok", "diluizione_ok",
-               "leva_ok", "copertura_ok"]
+# Controlli obbligatori (versione B1): chi ne fallisce esattamente uno finisce nei near miss
+HARD_CHECKS = ["mcap_ok", "settore_ok", "svolta_ok", "crescita_ok", "margine_lordo_ok"]
 
 # Settori con margine lordo strutturalmente basso (analisi casi passati):
 # costruzioni e impianti, auto, materie prime grezze
@@ -223,12 +221,16 @@ def is_hardware(info):
     return info.get("sector") == "Industrials" or any(w in ind for w in HW_INDUSTRY_WORDS)
 
 
-def short_desc(summary, max_len=110):
+def short_desc(summary, max_len=110, name=None):
     """Riassunto in poche parole del longBusinessSummary (prima frase, senza
     il nome dell'azienda e le formule di rito)."""
     if not summary:
         return ""
     s = summary.strip()
+    # nome dell'azienda in testa: tolto prima di spezzare la frase
+    # (nomi con punti come "e.l.f. Beauty, Inc." spezzerebbero la frase)
+    if name and s.lower().startswith(name.lower()):
+        s = s[len(name):].lstrip(" ,")
     # non spezzare la frase dopo le sigle societarie ("Unity Software Inc. operates")
     s = re.sub(r"\b(Inc|Corp|Co|Ltd|Plc|plc|S\.A|N\.V|U\.S|L\.P|Bhd|Ltda|AG|SE)\.(?=[\s,])",
                lambda m: m.group(1).replace(".", "§") + "§", s)
@@ -245,12 +247,107 @@ def short_desc(summary, max_len=110):
     return s[:1].upper() + s[1:]
 
 
+# Traduzione semplice dei primi termini di "cosa fa" (verbi iniziali, legami
+# e luoghi frequenti): il resto della frase resta in inglese.
+_IT_VERBS = {
+    "designs": "progetta", "develops": "sviluppa", "provides": "fornisce",
+    "operates": "gestisce", "manufactures": "produce", "offers": "offre",
+    "engages": "si occupa", "produces": "produce", "sells": "vende",
+    "focuses": "si concentra", "delivers": "fornisce", "owns": "possiede",
+    "creates": "crea", "discovers": "scopre", "makes": "produce",
+    "supplies": "fornisce", "researches": "fa ricerca", "distributes": "distribuisce",
+    "markets": "commercializza", "builds": "costruisce", "commercializes": "commercializza",
+    "licenses": "concede in licenza", "invests": "investe", "acquires": "acquisisce",
+    "explores": "esplora", "installs": "installa", "services": "assiste",
+    "leases": "affitta", "is": "è", "serves": "serve",
+    "assembles": "assembla", "tests": "collauda", "enables": "permette",
+}
+_IT_PHRASES = [
+    (r"\bin the United States and internationally\b", "negli Stati Uniti e all'estero"),
+    (r"\bin the United States\b", "negli Stati Uniti"),
+    (r"\binternationally\b", "all'estero"),
+    (r"\bworldwide\b", "in tutto il mondo"),
+    (r"\bglobally\b", "nel mondo"),
+    (r"\bin North America\b", "in Nord America"),
+    (r"\bin Europe\b", "in Europa"),
+    (r"\bin China\b", "in Cina"),
+    (r"\bin Japan\b", "in Giappone"),
+    (r"\bengages in\b", "si occupa di"),
+    (r"\bfocuses on\b", "si concentra su"),
+    (r"\bspecializes in\b", "è specializzata in"),
+    (r"\boperates as an?\b", "opera come"),
+    (r"\bthe research, development, and commercialization of\b", "ricerca, sviluppo e vendita di"),
+    (r"\bthe development and commercialization of\b", "sviluppo e vendita di"),
+    (r"\bthe design, development, and sale of\b", "progettazione, sviluppo e vendita di"),
+    (r"\bthe discovery, development, and commercialization of\b", "scoperta, sviluppo e vendita di"),
+    (r"\bdesign\b", "progettazione"),
+    (r"\bdevelopment\b", "sviluppo"),
+    (r"\bcommercialization\b", "vendita"),
+    (r"\bmanufacture\b", "produzione"),
+    (r"\bmanufacturing\b", "produzione"),
+    (r"\bsale\b", "vendita"),
+    (r"\bresearch\b", "ricerca"),
+    (r"\bdistribution\b", "distribuzione"),
+    (r"\bsoftware solutions\b", "soluzioni software"),
+    (r"\bsoftware platform\b", "piattaforma software"),
+    (r"\bcloud-based\b", "in cloud"),
+    (r"\bsolutions\b", "soluzioni"),
+    (r"\bservices\b", "servizi"),
+    (r"\bproducts\b", "prodotti"),
+    (r"\bplatforms?\b", "piattaforma"),
+    (r"\btherapies\b", "terapie"),
+    (r"\btherapeutics\b", "terapie"),
+    (r"\bmedical devices\b", "dispositivi medici"),
+    (r"\bsemiconductors\b", "semiconduttori"),
+    (r"\bcustomers\b", "clienti"),
+    (r"\bcompanies\b", "aziende"),
+    (r"\bbusinesses\b", "imprese"),
+    (r"\bpatients\b", "pazienti"),
+    (r"\btreatment of\b", "cura di"),
+    (r"\bfor the\b", "per il"),
+    (r"\bfor\b", "per"),
+    (r"\band\b", "e"),
+    (r"\bor\b", "o"),
+    (r"\bwith\b", "con"),
+    (r"\bof\b", "di"),
+    (r"\bthrough\b", "tramite"),
+    (r"\bthat\b", "che"),
+    (r"\bacross\b", "in"),
+]
+
+
+def cosa_fa_it(desc_en):
+    """Versione italiana semplice della descrizione breve: traduce i verbi
+    iniziali e le parole più frequenti; il resto resta in inglese."""
+    if not desc_en:
+        return desc_en
+    s = desc_en
+    # verbi iniziali, anche in elenco ("Designs, develops, and markets")
+    m = re.match(r"^((?:[A-Za-z]+(?:,\s*and\s+|\s+and\s+|,\s*))*[A-Za-z]+)\b(.*)$", s)
+    if m:
+        words = re.split(r",\s*and\s+|\s+and\s+|,\s*", m.group(1))
+        if words and all(w.lower() in _IT_VERBS for w in words):
+            it = [_IT_VERBS[w.lower()] for w in words]
+            head = it[0] if len(it) == 1 else ", ".join(it[:-1]) + " e " + it[-1]
+            s = head + m.group(2)
+    s = re.sub(r"^(Si occupa) in\b", r"\1 di", s, flags=re.I)
+    s = re.sub(r"^(Si concentra) on\b", r"\1 su", s, flags=re.I)
+    for pat, rep in _IT_PHRASES:
+        s = re.sub(pat, rep, s)
+    s = re.sub(r"\b(a|an|the)\s+", "", s)  # articoli inglesi: tolti
+    s = s.replace(", e ", " e ").replace(", o ", " o ")  # virgola prima di "and" all'inglese
+    s = re.sub(r"\s+", " ", s).strip()
+    return s[:1].upper() + s[1:]
+
+
 # ----------------------------- primo filtro (cache) -----------------------------
 
 
 def prefilter(info):
     """Solo dati della cache .info del GARP, nessuna chiamata di rete. Soglie
-    allargate di prefilter_slack per poter mostrare anche i near miss."""
+    allargate di prefilter_slack per poter mostrare anche i near miss.
+    Versione B1: solo capitalizzazione, crescita dei ricavi e margine lordo
+    (prezzo e analisti non sono più filtri)."""
     if not info or info.get("sector") in COMMODITY_SECTORS:
         return False
     C, k = CRITERIA, CRITERIA["prefilter_slack"]
@@ -261,14 +358,7 @@ def prefilter(info):
     if rg is None or not (C["rev_growth_min"] * k <= rg <= C["rev_growth_max"] / k):
         return False
     gm = _num(info.get("grossMargins"))
-    if gm is not None and gm < C["gross_margin_floor_rising"] * k:
-        return False
-    price = _num(info.get("currentPrice")) or _num(info.get("regularMarketPrice"))
-    high = _num(info.get("fiftyTwoWeekHigh"))
-    if price and high and not (C["pct_of_52w_high_min"] * k <= price / high <= 1.0):
-        return False
-    n = info.get("numberOfAnalystOpinions")
-    if n is not None and n > C["analysts_max"] / k:
+    if gm is not None and gm < C["gross_margin_min_hw"] * k:
         return False
     return True
 
@@ -291,7 +381,7 @@ def quarterly_metrics(q):
     """Dalle trimestrali (Yahoo ne dà ~5): crescite YoY, margini lordo e
     operativo per trimestre, margine operativo degli ultimi 12 mesi."""
     out = {"q_rev_yoy": None, "q_rev_yoy_prev": None, "gm_q": None, "gm_q_1y": None,
-           "om_q": None, "om_q_1y": None, "om_q_2ago": None, "om_ttm": None,
+           "gm_ttm": None, "gm_ttm_prev": None, "om_q": None, "om_q_1y": None, "om_q_2ago": None, "om_ttm": None,
            "om_ttm_prev": None, "op_cross_zero": False}
     rev = _row(q, "Total Revenue", "Operating Revenue")
     if rev is None:
@@ -309,6 +399,11 @@ def quarterly_metrics(q):
             out["gm_q"] = mm[-1]
         if len(mm) >= 5:
             out["gm_q_1y"] = mm[-5]
+        c = [d for d in c if rev[d] > 0]
+        if len(c) >= 4:
+            out["gm_ttm"] = float(sum(gp[d] for d in c[-4:]) / sum(rev[d] for d in c[-4:]))
+        if len(c) >= 8:
+            out["gm_ttm_prev"] = float(sum(gp[d] for d in c[-8:-4]) / sum(rev[d] for d in c[-8:-4]))
     oi = _row(q, "Operating Income", "EBIT")
     if oi is not None:
         c = [d for d in oi.index.intersection(rev.index).sort_values() if rev[d] > 0]
@@ -424,8 +519,9 @@ def evaluate(symbol, cached, index_name=None, strict=False):
         if not full and q is None and a is None:
             # niente di nuovo da Yahoo oltre alla cache: errore, verrà ritentato
             return {"ticker": symbol, "error": "dettagli non scaricati (limite Yahoo?)"}
-        if strict and (q is None or (tr is None and (info.get("numberOfAnalystOpinions") or 0) > 0)):
-            return {"ticker": symbol, "error": "dati incompleti (trimestrali o stime)"}
+        if strict and q is None:
+            # le trimestrali decidono i filtri B1; le stime contano solo nel punteggio
+            return {"ticker": symbol, "error": "dati incompleti (trimestrali)"}
         r = score_one(symbol, info, quarterly_metrics(q), annual_metrics(a),
                       dilution_1y(bs), eps_estimates(tr), insider_buy_share(ip),
                       index_name)
@@ -454,12 +550,13 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
     m_usd = mcap_usd(info)
     hw = is_hardware(info)
 
-    # ---------------- utili e margine operativo ----------------
+    # ---------------- utili (solo informazione: il primo utile non è più un filtro) ----------------
     eps_ttm = _num(info.get("trailingEps"))
     eps_next = _first(est["eps_next_y"], _num(info.get("forwardEps")))
     near_zero = eps_ttm is not None and (eps_ttm <= 0 or bool(price and eps_ttm / price <= C["eps_near_zero_yield"]))
     eps_turn = bool(near_zero and eps_next is not None and eps_next > 0 and eps_next > eps_ttm)
 
+    # ---------------- margine operativo in svolta ----------------
     om = _first(qm["om_ttm"], _num(info.get("operatingMargins")), am["om_fy"])
     # variazione su un anno: 12 mesi su 12 mesi se ci sono 8 trimestri,
     # altrimenti ultimo anno fiscale sul precedente
@@ -478,15 +575,10 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
     # variazione "efficace" per il punteggio: +8 punti sul trimestre valgono come +5 annui
     d_eff = max([x for x in (om_delta, None if om_delta_q is None else om_delta_q - 0.03)
                  if x is not None], default=None)
-    # livello "attuale": ultimo trimestre (in una svolta i 12 mesi restano indietro)
-    om_level = _first(qm["om_q"], om)
-    level_ok = om_level is not None and C["op_margin_level_min"] <= om_level <= C["op_margin_level_max"]
+    # livello: margine operativo degli ultimi 12 mesi (backtest B1)
+    level_ok = om is not None and C["op_margin_level_min"] <= om <= C["op_margin_level_max"]
     worsening = qm["om_q"] is not None and qm["om_q_2ago"] is not None and qm["om_q"] < qm["om_q_2ago"]
-    cross_zero = bool(qm["op_cross_zero"] or (eps_turn and (eps_ttm or 0) <= 0)
-                      or (om_delta is not None and om is not None and om >= 0 > om - om_delta))
-    # utile atteso l'anno prossimo: senza, non è una svolta ma una speranza
-    profit_ahead = eps_next is None or eps_next > 0
-    svolta_ok = level_ok and not worsening and profit_ahead and (jump or eps_turn or qm["op_cross_zero"])
+    svolta_ok = bool(jump and level_ok and not worsening)
 
     # ---------------- ricavi ----------------
     rg = _first(qm["q_rev_yoy"], _num(info.get("revenueGrowth")))
@@ -498,14 +590,24 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
         accel, accel_src = None, None
     accelerating = accel is not None and accel >= C["accel_min"]
 
-    # ---------------- margine lordo ----------------
-    gm = _first(qm["gm_q"], _num(info.get("grossMargins")), am["gm_fy"])
-    gm_prev = qm["gm_q_1y"] if qm["gm_q_1y"] is not None else (am["gm_fy_prev"] if qm["gm_q"] is None else None)
-    gm_d = gm - gm_prev if gm is not None and gm_prev is not None else None
+    # ---------------- margine lordo (12 mesi) ----------------
+    gm = _first(qm["gm_ttm"], _num(info.get("grossMargins")), am["gm_fy"])
+    # "non in calo rispetto a 4 trimestri prima": 12 mesi su 12 mesi se ci sono
+    # 8 trimestri, altrimenti ultimo trimestre sullo stesso dell'anno prima,
+    # altrimenti anno fiscale sul precedente
+    if qm["gm_ttm"] is not None and qm["gm_ttm_prev"] is not None:
+        gm_d, gm_src = qm["gm_ttm"] - qm["gm_ttm_prev"], "12 mesi su 12 mesi"
+    elif qm["gm_q"] is not None and qm["gm_q_1y"] is not None:
+        gm_d, gm_src = qm["gm_q"] - qm["gm_q_1y"], "trimestre sullo stesso dell'anno prima"
+    elif am["gm_fy"] is not None and am["gm_fy_prev"] is not None:
+        gm_d, gm_src = am["gm_fy"] - am["gm_fy_prev"], "anno fiscale"
+    else:
+        gm_d, gm_src = None, None
     gm_min = C["gross_margin_min_hw"] if hw else C["gross_margin_min"]
     gm_rising = gm_d is not None and gm_d >= C["gross_margin_rising_min"]
+    gm_not_falling = gm_d is None or gm_d >= -C["gross_margin_drop_max"]
 
-    # ---------------- bilancio ----------------
+    # ---------------- bilancio (avvisi, non filtri) ----------------
     cash = _num(info.get("totalCash"))
     debt = _num(info.get("totalDebt"))
     fcf = _num(info.get("freeCashflow"))
@@ -514,57 +616,56 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
     nd_ebitda = ((debt or 0) - (cash or 0)) / ebitda if ebitda and ebitda > 0 else None
     analysts = info.get("numberOfAnalystOpinions")
     rv, rv30 = est["revision_90d"], est["revision_30d"]
+    avvisi = []
+    if dil is not None and dil > C["dilution_max"]:
+        avvisi.append(f"diluizione {dil*100:.0f}% l'anno (oltre 10%)")
+    if runway is not None and runway < C["runway_years_min"]:
+        avvisi.append(f"cassa per {runway:.1f} anni al consumo attuale (meno di 2)")
 
     checks = {
+        # filtri obbligatori B1
         "mcap_ok": m_usd is not None and C["mcap_min_usd"] <= m_usd <= C["mcap_max_usd"],
         "settore_ok": (info.get("industry") or "") not in LOW_MARGIN_INDUSTRIES
                       and info.get("sector") not in COMMODITY_SECTORS,
         "svolta_ok": svolta_ok,
         "crescita_ok": rg is not None and C["rev_growth_min"] <= rg <= C["rev_growth_max"],
-        "margine_lordo_ok": gm is not None and (gm >= gm_min or (gm_rising and gm >= C["gross_margin_floor_rising"]))
-                            and not (gm_d is not None and gm_d < -C["gross_margin_drop_max"]),
+        "margine_lordo_ok": gm is not None and gm >= gm_min and gm_not_falling,
+        # informativi (non più filtri dal backtest del 03/11/2026)
         "revisioni_ok": rv is not None and rv >= C["revision_90d_min"]
                         and not (rv30 is not None and rv30 < C["revision_30d_cut_max"]),
         "prezzo_ok": pct_high is not None and C["pct_of_52w_high_min"] <= pct_high <= C["pct_of_52w_high_max"]
                      and not (x_low is not None and x_low > C["x_52w_low_max"]),
         "runway_ok": runway is None or runway >= C["runway_years_min"],
-        "diluizione_ok": dil is None or dil < C["dilution_max"],
+        "diluizione_ok": dil is None or dil <= C["dilution_max"],
         "leva_ok": nd_ebitda is None or nd_ebitda < C["net_debt_ebitda_max"],
         "copertura_ok": analysts is None or analysts <= C["analysts_max"],
-        # segnali che entrano solo nel punteggio
         "accelerazione_ok": accelerating,
         "pochi_analisti_ok": analysts is not None and analysts <= C["analysts_few"],
         "insider_ok": ins is not None and ins >= C["insider_buy_share_min"],
+        "primo_utile": eps_turn,
     }
 
-    # ---------------- punteggio 0-100 ----------------
+    # ---------------- punteggio (solo per ordinare) ----------------
     pts, motivi = {}, []
     s = 0
     if d_eff is not None and jump:
         s = 25 if d_eff >= 0.15 else 18 if d_eff >= 0.10 else 10
-    if cross_zero and (jump or eps_turn):
-        s = min(s + 5, 25) if s else 8
-    elif eps_turn and not s:
-        s = 5
     pts["margine_operativo"] = s
     if om_delta is not None and om_delta >= C["op_margin_jump_min"]:
-        motivi.append(f"margine operativo {om_delta*100:+.0f} punti ({om_src}), ultimo trimestre {om_level*100:.0f}%")
+        motivi.append(f"margine operativo {om_delta*100:+.0f} punti ({om_src}), 12 mesi {om*100:.0f}%")
     elif om_delta_q is not None and om_delta_q >= C["op_margin_jump_q_min"]:
-        motivi.append(f"margine operativo dell'ultimo trimestre {om_delta_q*100:+.0f} punti sull'anno prima")
-    if eps_turn:
-        motivi.append(f"primo utile in arrivo: EPS 12m {eps_ttm:.2f} → anno prossimo {eps_next:.2f}")
-    elif qm["op_cross_zero"]:
-        motivi.append("risultato operativo tornato positivo nell'ultimo trimestre")
+        motivi.append(f"margine operativo dell'ultimo trimestre {om_delta_q*100:+.0f} punti sull'anno prima"
+                      + (f", 12 mesi {om*100:.0f}%" if om is not None else ""))
 
     s = 0
     if gm is not None:
         s = 10 if gm >= 0.75 else 7 if gm >= 0.60 else 4 if gm >= 0.55 else 2 if gm >= 0.40 else 0
         if hw and s:
-            s -= 1  # margini da hardware: un punto in meno (analisi casi passati)
+            s -= 1  # margini da hardware: un punto in meno (come nel backtest)
         if gm_rising:
             s += 5
             motivi.append(f"margine lordo {gm*100:.0f}% in salita ({gm_d*100:+.0f} punti)")
-        elif gm >= 0.55:
+        elif gm >= gm_min:
             motivi.append(f"margine lordo {gm*100:.0f}%")
     pts["margine_lordo"] = s
 
@@ -578,11 +679,12 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
             motivi.append(f"ricavi +{rg*100:.0f}%")
     pts["crescita"] = s
 
+    # revisioni: peso ridotto (5 su 80), non verificabili su dati storici
     s = 0
     if rv is not None:
-        s = 15 if rv >= 0.20 else 10 if rv >= 0.10 else 6 if rv >= 0.05 else 0
+        s = 5 if rv >= 0.20 else 3 if rv >= 0.10 else 2 if rv >= 0.05 else 0
         if rv >= 0.05:
-            motivi.append(f"stime anno prossimo {rv*100:+.0f}% in {est['revision_base'] or '90g'}")
+            motivi.append(f"stime anno prossimo {rv*100:+.0f}% in {est['revision_base'] or '90g'} (non testato)")
     pts["revisioni"] = s
 
     s = 0
@@ -598,8 +700,7 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
     if fcf is not None and fcf > 0 and cash is not None and cash > (debt or 0):
         motivi.append("cassa netta e flusso di cassa positivo")
 
-    # prezzo rispetto alla crescita: P/E sull'anno prossimo / crescita attesa
-    # (EPS +1y su anno corrente se positivo, altrimenti crescita dei ricavi)
+    # prezzo rispetto alla crescita: solo informazione (non nel punteggio dal 03/11/2026)
     pe_next = price / eps_next if price and eps_next and eps_next > 0 else None
     g = None
     if est["eps_cur_y"] and est["eps_cur_y"] > 0 and eps_next:
@@ -607,32 +708,25 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
     if g is None or g <= 0:
         g = rg
     peg_next = pe_next / (g * 100) if pe_next and g and g > 0 else None
-    pts["prezzo_crescita"] = (10 if peg_next < 0.8 else 6 if peg_next < 1.2 else 3 if peg_next < 2 else 0) \
-        if peg_next is not None else 0
+    pts["prezzo_crescita"] = 0
 
     s = 0
-    if x_low is not None:
-        s = 10 if 1.2 <= x_low <= 1.8 else 5 if x_low <= 2.5 else 0
-    if pct_high is not None and pct_high > 0.95:
+    if x_low is not None and C["x_52w_low_score_min"] <= x_low <= C["x_52w_low_score_max"]:
+        s = 10
+        motivi.append(f"prezzo {x_low:.1f} volte il minimo a 52 settimane")
+    if pct_high is not None and pct_high > C["pct_of_52w_high_penalty"]:
         s -= 3
     pts["posizione_prezzo"] = s
 
-    s = 0
-    if checks["pochi_analisti_ok"]:
-        s += 3
-        motivi.append(f"solo {analysts} analisti")
-    if checks["insider_ok"]:
-        s += 2
-        motivi.append("insider in acquisto")
-    pts["scoperta"] = s
-    pen = -5 if ins is not None and ins < C["insider_sell_heavy"] else 0
-    if m_usd is not None and not (C["mcap_ideal_min_usd"] <= m_usd <= C["mcap_ideal_max_usd"]):
-        pen -= 5
-    pts["penalita"] = pen
+    pts["scoperta"] = 0   # non più nel punteggio (numero analisti, insider: solo informazione)
+    pts["penalita"] = 0   # non più penalità per capitalizzazione o vendite degli insider
 
-    total = max(0, min(100, sum(pts.values())))
+    raw = max(0, sum(pts.values()))
+    total = max(0, min(100, round(raw * 100 / SCORE_MAX_RAW)))
     hard_fail = [k for k in HARD_CHECKS if not checks[k]]
     ind = info.get("industry") or ""
+    desc_en = short_desc(info.get("longBusinessSummary"),
+                         name=info.get("longName") or info.get("shortName")) or ind
 
     return {
         "ticker": symbol,
@@ -642,7 +736,8 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
         "industria": info.get("industry"),
         "paese": info.get("country"),
         "valuta": info.get("currency"),
-        "cosa_fa": short_desc(info.get("longBusinessSummary")) or ind,
+        "cosa_fa": cosa_fa_it(desc_en),
+        "cosa_fa_en": desc_en,
         "capitalizzazione": _num(info.get("marketCap")),
         "capitalizzazione_usd": m_usd,
         "prezzo": price,
@@ -653,16 +748,21 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
         "accelerazione_metodo": accel_src,
         "margine_lordo": gm,
         "margine_lordo_variazione": gm_d,
+        "margine_lordo_metodo": gm_src,
+        "margine_lordo_trimestre": qm["gm_q"],
         "margine_operativo": om,
         "margine_operativo_variazione": om_delta,
         "margine_operativo_metodo": om_src,
         "margine_operativo_var_trimestre": om_delta_q,
         "margine_operativo_trimestre": qm["om_q"],
+        "margine_operativo_trimestre_2fa": qm["om_q_2ago"],
         "eps_ttm": eps_ttm,
         "eps_prossimo_anno": eps_next,
+        "primo_utile": eps_turn,
         "revisione_stime_90g": rv,
         "revisione_base": est["revision_base"],
         "revisione_stime_30g": rv30,
+        "revisioni_nota": "non verificabile storicamente: solo informazione e punteggio ridotto",
         "pe_anno_prossimo": pe_next,
         "peg_anno_prossimo": peg_next,
         "numero_analisti": analysts,
@@ -673,6 +773,7 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
         "runway": runway,
         "diluizione": dil,
         "insider_quota_acquisti": ins,
+        "avvisi": avvisi,
         "tema_affollato": any(w in ind for w in CROWDED_INDUSTRY_WORDS),
         "punteggio_100": total,
         "punteggio": round(total / 10, 1),
@@ -785,6 +886,11 @@ def make_report(results, meta, started):
                   key=lambda r: -r["punteggio"])
     for r in near:
         r["failed_check"] = r["failed_checks"][0]
+    # da radiografare: tutti se sono 8 o meno, altrimenti i primi 8 per punteggio
+    radio = passed if len(passed) <= TOP_RADIOGRAFIA else passed[:TOP_RADIOGRAFIA]
+    radio_set = {r["ticker"] for r in radio}
+    for r in passed:
+        r["da_radiografare"] = r["ticker"] in radio_set
 
     latest_path = os.path.join(RESULTS_DIR, "latest.json")
     prev = set()
@@ -803,6 +909,7 @@ def make_report(results, meta, started):
         "date": today,
         "generated_at_utc": started.isoformat(),
         "duration_seconds": round((datetime.now(timezone.utc) - started).total_seconds()),
+        "versione_criteri": VERSIONE_CRITERI,
         "criteria": CRITERIA,
         "hard_checks": HARD_CHECKS,
         "universe_size": meta["universe_size"],
@@ -815,6 +922,10 @@ def make_report(results, meta, started):
         "passed_count": len(passed),
         "new_today": new_today,
         "dropped_since_yesterday": sorted(prev - tickers),
+        "da_radiografare": [r["ticker"] for r in radio],
+        "regola_radiografia": f"tutti i promossi se sono {TOP_RADIOGRAFIA} o meno, altrimenti "
+                              f"i primi {TOP_RADIOGRAFIA} per punteggio; ricontrollo ogni trimestre",
+        "punteggio_uso": "solo per ordinare: nessuna soglia d'acquisto",
         "passed": passed,
         "near_miss_count": len(near),
         "near_miss": near[:40],
@@ -824,56 +935,64 @@ def make_report(results, meta, started):
         with open(p, "w") as f:
             json.dump(report, f, indent=1, default=str)
 
-    nomi_check = {"mcap_ok": "capitalizzazione fuori 200 M$–20 Mld$",
+    nomi_check = {"mcap_ok": "capitalizzazione fuori 1-15 Mld$",
                   "settore_ok": "settore a margine basso",
-                  "svolta_ok": "nessuna svolta (o margine operativo fuori -15%/+20%)",
-                  "crescita_ok": "crescita ricavi fuori 20%–100%",
-                  "margine_lordo_ok": "margine lordo basso o in calo",
-                  "revisioni_ok": "stime non in rialzo (+5% in 90g) o tagliate",
-                  "prezzo_ok": "prezzo già corso o troppo lontano dal massimo",
-                  "runway_ok": "cassa per meno di 2 anni", "diluizione_ok": "diluizione >= 10%",
-                  "leva_ok": "debito netto/EBITDA >= 3", "copertura_ok": "più di 25 analisti"}
-    n_buy = sum(1 for r in passed if r["punteggio"] >= BUY_SCORE_MIN)
+                  "svolta_ok": "margine operativo non in svolta (o fuori -15%/+20%, o ultimo trimestre in calo)",
+                  "crescita_ok": "ricavi dell'ultimo trimestre fuori +20%/+60%",
+                  "margine_lordo_ok": "margine lordo basso o in calo"}
+    n_radio = len(radio)
     L = [f"# Screener Svolta — {today}", "",
-         "Aziende di qualità vicine a un punto di svolta (utili che diventano positivi o "
-         "margini in forte salita) che il mercato potrebbe non aver ancora prezzato. "
-         "Ordinate per punteggio di qualità 0-10: **conta la testa della classifica**. "
-         f"Comprare solo le 3-4 migliori con punteggio ≥ {BUY_SCORE_MIN:.1f} (★); nessuna se "
-         "nessuna ci arriva.", "",
+         "> **Elenco di candidate da RADIOGRAFARE, non da comprare.** Sono aziende con margine "
+         "lordo alto, ricavi in crescita sana e margine operativo in svolta (versione B1). "
+         "Ognuna va analizzata a mano prima di qualsiasi decisione.", "",
+         "> **Cosa dice il backtest storico (2012-2026, 03/11/2026).** Il nucleo B1 ha battuto "
+         "l'universo di **+10,5 punti annui nel 2012-19** e **+22 nel 2020-24**, ma ha fatto "
+         "**-6,7 punti nel 2025-26**. Pochi titoli e criteri scelti dopo molti test: è "
+         "un'ipotesi da seguire in tempo reale, non una regola provata. Quota satellite piccola.", "",
+         f"> **Come si usa.** Se i promossi sono {TOP_RADIOGRAFIA} o meno si considerano tutti; "
+         f"altrimenti i primi {TOP_RADIOGRAFIA} per punteggio. Il punteggio serve **solo a "
+         "ordinare** (nessuna soglia d'acquisto). **Ricontrollo ogni trimestre**, dopo i conti: "
+         "chi esce dai filtri esce, senza aspettare.", "",
          f"Universo: {meta['universe_size']} | Con dati: {meta['analyzed']} | Primo filtro: "
-         f"{meta['prefilter_passed']} | **Promossi: {len(passed)}** (★ {n_buy}) | Errori: {len(errors)} | "
+         f"{meta['prefilter_passed']} | **Promossi: {len(passed)}** | Da radiografare: {n_radio} | "
+         f"Errori: {len(errors)} | "
          f"Nuovi: {', '.join(new_today) or '—'} | Usciti: {', '.join(report['dropped_since_yesterday']) or '—'}",
-         "", f"## Classifica (prime {min(TOP_N_MD, len(passed))})", ""]
+         ""]
+    if radio:
+        L += [f"**Da radiografare ({n_radio}):** " + ", ".join(r["ticker"] for r in radio), ""]
+    L += [f"## Classifica (prime {min(TOP_N_MD, len(passed))})", ""]
     if not passed:
         L.append("Nessun titolo supera oggi tutti i filtri obbligatori.")
     for r in passed[:TOP_N_MD]:
         omv = r.get("margine_operativo_variazione")
         omv_s = "n/d" if omv is None else f"{omv*100:+.0f} punti"
-        star = " ★" if r["punteggio"] >= BUY_SCORE_MIN else ""
+        tag = " · **da radiografare**" if r.get("da_radiografare") else ""
         crowd = " · tema AI affollato" if r.get("tema_affollato") else ""
         L += [f"**{r['posizione']}. {r['ticker']} — {r.get('nome') or ''}** · punteggio "
-              f"**{r['punteggio']:.1f}**/10{star} · {r.get('settore') or 'n/d'}, {r.get('paese') or 'n/d'} · "
+              f"{r['punteggio']:.1f}/10{tag} · {r.get('settore') or 'n/d'}, {r.get('paese') or 'n/d'} · "
               f"cap. {_money(r.get('capitalizzazione_usd'))} ${crowd}",
               f"- Cosa fa: {r.get('cosa_fa') or 'n/d'}",
               f"- Perché: {'; '.join(r.get('motivi') or []) or '—'}",
-              f"- Numeri: ricavi {_pct(r.get('crescita_ricavi'))}, margine lordo "
-              f"{_pct(r.get('margine_lordo'))}, margine operativo {_pct(r.get('margine_operativo'))}"
-              f" ({omv_s}), "
+              f"- Numeri: ricavi {_pct(r.get('crescita_ricavi'))}, margine lordo 12 mesi "
+              f"{_pct(r.get('margine_lordo'))}, margine operativo 12 mesi {_pct(r.get('margine_operativo'))}"
+              f" ({omv_s}), ultimo trimestre {_pct(r.get('margine_operativo_trimestre'))}, "
               f"EPS 12m {_eps(r.get('eps_ttm'))} → anno prossimo {_eps(r.get('eps_prossimo_anno'))}, "
-              f"stime {_pct(r.get('revisione_stime_90g'))} in 90g, "
+              f"stime {_pct(r.get('revisione_stime_90g'))} in 90g (non testato), "
               f"analisti {r.get('numero_analisti') if r.get('numero_analisti') is not None else 'n/d'}, "
               f"{_pct(r.get('pct_of_52w_high'))} del massimo 52 sett."
-              + (f" (dati mancanti: {', '.join(r['dati_mancanti'])})" if r.get("dati_mancanti") else ""),
-              ""]
+              + (f" (dati mancanti: {', '.join(r['dati_mancanti'])})" if r.get("dati_mancanti") else "")]
+        if r.get("avvisi"):
+            L.append(f"- ⚠ Avvisi: {'; '.join(r['avvisi'])}")
+        L.append("")
     if len(passed) > TOP_N_MD:
         L += ["## Gli altri promossi", "",
-              "| # | Ticker | Nome | Punteggio | Ricavi | Margine lordo | Revisione 90g | Analisti |",
+              "| # | Ticker | Nome | Punteggio | Ricavi | Margine lordo | Margine op. 12m | Avvisi |",
               "|---|---|---|---|---|---|---|---|"]
         for r in passed[TOP_N_MD:]:
             L.append(f"| {r['posizione']} | {r['ticker']} | {(r.get('nome') or '')[:30]} | "
                      f"{r['punteggio']:.1f} | {_pct(r.get('crescita_ricavi'))} | "
-                     f"{_pct(r.get('margine_lordo'))} | {_pct(r.get('revisione_stime_90g'))} | "
-                     f"{r.get('numero_analisti') if r.get('numero_analisti') is not None else 'n/d'} |")
+                     f"{_pct(r.get('margine_lordo'))} | {_pct(r.get('margine_operativo'))} | "
+                     f"{'; '.join(r.get('avvisi') or []) or '—'} |")
         L.append("")
     if near:
         L += ["## Quasi (manca un solo filtro)", "",
@@ -883,18 +1002,26 @@ def make_report(results, meta, started):
                      f"{nomi_check.get(r['failed_check'], r['failed_check'])} | "
                      f"{(r.get('cosa_fa') or '')[:70]} |")
         L.append("")
-    L += ["Filtri obbligatori: capitalizzazione 200 M$–20 Mld$; svolta (margine operativo +5 punti "
-          "in un anno o +8 sul trimestre, oppure primo utile in arrivo, con margine operativo "
-          "attuale tra -15% e +20% e non in calo sugli ultimi due trimestri); ricavi +20%–100%; "
-          "margine lordo ≥ 55% (40% industriali/hardware) oppure ≥ 25% e in salita, e non in calo "
-          "di oltre 3 punti; esclusi costruzioni, auto, trasporto marittimo, energia e materie prime; utile atteso l'anno prossimo; stime anno prossimo +5% in 90 giorni senza tagli a 30 giorni; prezzo tra 60% e "
-          "97% del massimo a 52 settimane e non oltre 2,5 volte il minimo; cassa per 2+ anni, "
-          "diluizione < 10%, debito netto/EBITDA < 3; al massimo 25 analisti. Accelerazione dei "
-          "ricavi, pochi analisti e acquisti degli insider pesano nel punteggio. Da verificare a "
-          "mano: eventi binari vicini (FDA, sentenze), crescita da acquisizioni, temi affollati."]
+    L += ["Filtri obbligatori (versione B1, backtest del 03/11/2026): margine lordo degli ultimi "
+          "12 mesi ≥ 55% (≥ 40% industria/hardware) e non in calo rispetto a 4 trimestri prima; "
+          "ricavi dell'ultimo trimestre +20%/+60% sull'anno prima; margine operativo in svolta "
+          "(12 mesi almeno +5 punti in un anno, oppure ultimo trimestre +8 punti sullo stesso "
+          "trimestre dell'anno prima; livello dei 12 mesi tra -15% e +20%; ultimo trimestre non "
+          "peggiore di due trimestri prima); capitalizzazione 1-15 Mld$; esclusi costruzioni, auto, "
+          "trasporto marittimo, energia e materie prime e i titoli con dati non valutabili.", "",
+          "Non sono più filtri: primo utile, solidità di cassa (solo avviso se diluizione > 10% "
+          "l'anno o cassa per meno di 2 anni), revisioni delle stime (punteggio ridotto: non "
+          "verificabili su dati storici), numero di analisti, posizione del prezzo. Punteggio: "
+          "margine operativo, margine lordo (+5 se in salita di ≥ 2 punti), crescita (+5 se in "
+          "accelerazione), flusso di cassa positivo e cassa netta, prezzo 1,2-1,8 volte il minimo "
+          "a 52 settimane (+10; -3 sopra il 95% del massimo), revisioni (peso ridotto). Da "
+          "verificare a mano: eventi binari vicini (FDA, sentenze), crescita da acquisizioni, "
+          "temi affollati. \"Cosa fa\" è una traduzione semplice dei primi termini della "
+          "descrizione di Yahoo."]
     with open(os.path.join(RESULTS_DIR, "latest.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(L) + "\n")
-    print(f"Svolta: {len(passed)} promossi, {len(near)} quasi, {len(errors)} errori")
+    print(f"Svolta: {len(passed)} promossi ({n_radio} da radiografare), {len(near)} quasi, "
+          f"{len(errors)} errori")
 
 
 # ----------------------------- main -----------------------------
