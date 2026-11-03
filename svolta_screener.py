@@ -19,7 +19,10 @@ trimestre di storia: soglie da verificare, non regole provate).
 FILTRI OBBLIGATORI (HARD_CHECKS, tutti):
   - capitalizzazione 200 M$ - 20 Mld$ (fascia ideale 1-15 Mld$, fuori -5 punti)
   - tutti i settori tranne quelli a margine lordo strutturalmente basso
-    (costruzioni e impianti, auto, materie prime grezze: LOW_MARGIN_INDUSTRIES)
+    (costruzioni e impianti, auto, trasporto marittimo: LOW_MARGIN_INDUSTRIES)
+    e dei settori Energy e Basic Materials (COMMODITY_SECTORS: la svolta segue
+    il prezzo della materia prima)
+  - utile atteso l'anno prossimo (stima EPS +1y > 0, se c'è)
   - svolta: margine operativo +5 punti in un anno (oppure ultimo trimestre +8
     punti sullo stesso trimestre dell'anno prima), OPPURE primo utile (EPS 12
     mesi <= 0 o quasi e stima dell'anno prossimo > 0), OPPURE risultato
@@ -135,7 +138,12 @@ HARD_CHECKS = ["mcap_ok", "settore_ok", "svolta_ok", "crescita_ok", "margine_lor
 LOW_MARGIN_INDUSTRIES = ("Engineering & Construction", "Infrastructure Operations",
                          "Residential Construction", "Auto Manufacturers", "Auto Parts",
                          "Steel", "Aluminum", "Copper", "Other Industrial Metals & Mining",
-                         "Agricultural Inputs", "Chemicals", "Lumber & Wood Production")
+                         "Agricultural Inputs", "Chemicals", "Lumber & Wood Production",
+                         "Marine Shipping")
+# Settori di materie prime/energia: il "margine lordo" e la svolta seguono il
+# prezzo della materia prima, non la qualità (prima prova su Actions: petroliere
+# e petroliferi in testa alla classifica)
+COMMODITY_SECTORS = ("Energy", "Basic Materials")
 
 HW_INDUSTRY_WORDS = ("Semiconductor", "Electronic", "Computer Hardware",
                      "Communication Equipment", "Scientific & Technical",
@@ -243,7 +251,7 @@ def short_desc(summary, max_len=110):
 def prefilter(info):
     """Solo dati della cache .info del GARP, nessuna chiamata di rete. Soglie
     allargate di prefilter_slack per poter mostrare anche i near miss."""
-    if not info:
+    if not info or info.get("sector") in COMMODITY_SECTORS:
         return False
     C, k = CRITERIA, CRITERIA["prefilter_slack"]
     m = mcap_usd(info)
@@ -462,7 +470,8 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
     else:
         om_delta, om_src = None, None
     om_delta_q = qm["om_q"] - qm["om_q_1y"] if qm["om_q"] is not None and qm["om_q_1y"] is not None else None
-    clip = lambda x: None if x is None else max(min(x, 1.0), -1.0)  # trimestri anomali
+    # variazioni oltre 50 punti = trimestre anomalo (quotazione, svalutazioni): ignorate
+    clip = lambda x: None if x is None or abs(x) > 0.5 else x
     om_delta, om_delta_q = clip(om_delta), clip(om_delta_q)
     jump = bool((om_delta is not None and om_delta >= C["op_margin_jump_min"])
                 or (om_delta_q is not None and om_delta_q >= C["op_margin_jump_q_min"]))
@@ -475,7 +484,9 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
     worsening = qm["om_q"] is not None and qm["om_q_2ago"] is not None and qm["om_q"] < qm["om_q_2ago"]
     cross_zero = bool(qm["op_cross_zero"] or (eps_turn and (eps_ttm or 0) <= 0)
                       or (om_delta is not None and om is not None and om >= 0 > om - om_delta))
-    svolta_ok = level_ok and not worsening and (jump or eps_turn or qm["op_cross_zero"])
+    # utile atteso l'anno prossimo: senza, non è una svolta ma una speranza
+    profit_ahead = eps_next is None or eps_next > 0
+    svolta_ok = level_ok and not worsening and profit_ahead and (jump or eps_turn or qm["op_cross_zero"])
 
     # ---------------- ricavi ----------------
     rg = _first(qm["q_rev_yoy"], _num(info.get("revenueGrowth")))
@@ -506,7 +517,8 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
 
     checks = {
         "mcap_ok": m_usd is not None and C["mcap_min_usd"] <= m_usd <= C["mcap_max_usd"],
-        "settore_ok": (info.get("industry") or "") not in LOW_MARGIN_INDUSTRIES,
+        "settore_ok": (info.get("industry") or "") not in LOW_MARGIN_INDUSTRIES
+                      and info.get("sector") not in COMMODITY_SECTORS,
         "svolta_ok": svolta_ok,
         "crescita_ok": rg is not None and C["rev_growth_min"] <= rg <= C["rev_growth_max"],
         "margine_lordo_ok": gm is not None and (gm >= gm_min or (gm_rising and gm >= C["gross_margin_floor_rising"]))
@@ -875,7 +887,7 @@ def make_report(results, meta, started):
           "in un anno o +8 sul trimestre, oppure primo utile in arrivo, con margine operativo "
           "attuale tra -15% e +20% e non in calo sugli ultimi due trimestri); ricavi +20%–100%; "
           "margine lordo ≥ 55% (40% industriali/hardware) oppure ≥ 25% e in salita, e non in calo "
-          "di oltre 3 punti; esclusi costruzioni, auto e materie prime; stime anno prossimo +5% in 90 giorni senza tagli a 30 giorni; prezzo tra 60% e "
+          "di oltre 3 punti; esclusi costruzioni, auto, trasporto marittimo, energia e materie prime; utile atteso l'anno prossimo; stime anno prossimo +5% in 90 giorni senza tagli a 30 giorni; prezzo tra 60% e "
           "97% del massimo a 52 settimane e non oltre 2,5 volte il minimo; cassa per 2+ anni, "
           "diluizione < 10%, debito netto/EBITDA < 3; al massimo 25 analisti. Accelerazione dei "
           "ricavi, pochi analisti e acquisti degli insider pesano nel punteggio. Da verificare a "
