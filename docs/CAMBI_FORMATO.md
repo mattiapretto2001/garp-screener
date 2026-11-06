@@ -118,33 +118,36 @@ Il campo esistente `errors` resta la lista dei ticker in errore.
 - `portafoglio.txt` è facoltativo, un ticker per riga, `#` per i commenti. Non è nel repository: le posizioni non vanno nel repository pubblico.
 - Nei parziali (`partials/*.json`) i titoli in errore hanno `error` con la causa originale, più `error_type` e `tentativi`. Prima `error` valeva "irrecuperabile dopo i retry".
 
-## 06/11/2026: GARP con PEG fino a 2 e punteggio
+## 06/11/2026: GARP con PEG fino a 2, punteggio e top 30
+
+Le scelte vengono dal backtest `REPORT_garp_peg2_2026-11-06.md`, su OneDrive in Claude/_scratch/backtest_screener.
 
 ### Cosa cambia nel filtro
 
-- `criteria.peg_max` passa da 1.0 a **2.0**. I promossi aumentano: sui dati del 06/11 lo stadio 1 passa da circa 204 a circa 292 titoli, prima del filtro sul CAGR dei ricavi.
-- Nuovo criterio `criteria.peg_classico_max` = 1.0, che separa le due fasce.
+- `criteria.peg_max` passa da 1.0 a **2.0**.
+- Nuovo `criteria.peg_classico_max` = 1.0, che separa le due fasce.
+- Il filtro sugli utili trimestrali **non cambia**. La tolleranza provata il 06/11 è stata tolta: nel backtest toglieva circa 6 punti l'anno nel 2025-26.
 
 ### `results/latest.json`: campi nuovi (nessuno tolto o rinominato)
 
 - Su ogni titolo di `passed`:
   - `fascia_peg`: `"classica"` (PEG < 1) oppure `"allargata"` (PEG 1-2).
-  - `punteggio_garp`: da 0 a 100, è il percentile pesato fra i promossi del giorno. Pesi: PEG 35 (il prospettico se c'è, altrimenti il trailing; più basso è meglio), revisione delle stime a 90 giorni 20, CAGR dei ricavi 15, crescita dei ricavi trimestrale 10, ROE 10, rendimento del FCF 10. Un dato mancante vale come mediano.
-  - `peg_usato_punteggio`: il PEG usato nel punteggio.
+  - `punteggio_garp`: da 0 a 100, percentile pesato fra i promossi del giorno, solo sulle variabili dei filtri. Pesi: PEG 30 (più basso è meglio), crescita dei ricavi trimestrale 12, crescita degli utili trimestrale 12, CAGR dei ricavi 12, ROE 12, rendimento del FCF 11, D/E 11 (più basso è meglio). Un dato mancante vale come mediano.
+  - `top30`: `true` per i primi 30 per punteggio.
 - In testa al report:
   - `passed_fascia_classica` e `passed_fascia_allargata`: i conteggi delle due fasce.
   - `pesi_punteggio`: i pesi qui sopra.
+  - `top_n`: vale 30.
   - `ordinamento_passed`: spiega l'ordine di `passed`.
 
 ### Cosa cambia nel comportamento
 
-- **`passed` è ordinato per `punteggio_garp` decrescente**, non più per PEG crescente. Chi vuole l'ordine di prima ordina per `peg`.
-- **`latest.md`:** una riga con i conteggi delle due fasce e due colonne nuove nella tabella, "Punteggio" e "Fascia".
-- **`snapshots/garp/*.csv`:** due colonne nuove in coda, `fascia_peg` e `punteggio_garp`. Nel Moonshot restano vuote.
+- **`passed` è ordinato per `punteggio_garp` decrescente**, non più per PEG crescente.
+- **`latest.md`:** una riga con i conteggi delle due fasce e tre colonne nuove nella tabella: "Punteggio", "Top 30" e "Fascia".
+- **`snapshots/garp/*.csv`:** tre colonne nuove in coda, `fascia_peg`, `punteggio_garp` e `top30`. Nel Moonshot restano vuote.
 
 ### Cosa può usare la routine
 
-- Per le proposte usare `punteggio_garp` come ordine di merito, non come segnale d'acquisto.
-- Un titolo in fascia "allargata" richiede di verificare il PEG prospettico come prima.
-- `new_today` aumenta parecchio il primo giorno, perché entrano i PEG 1-2: non sono "nuovi" in senso stretto.
-- `eps_tolleranza_stime` (nuovo campo su ogni titolo analizzato): `true` se il titolo supera il filtro sugli utili trimestrali solo grazie alla tolleranza. La tolleranza vale quando la crescita trimestrale degli utili non supera la soglia del 5%, ma le stime sull'utile dell'anno prossimo (`forwardEps`) sono sopra l'utile degli ultimi 12 mesi (`trailingEps` > 0). Sui dati del 06/11 lo stadio 1 sale da circa 292 a circa 325 titoli; fra gli altri entrano SPOT e NBIX.
+- **Le proposte dal GARP vengono dai titoli con `top30` = true.** Nel backtest il portafoglio dei primi 30 ha battuto la lista intera dal 2020, con la perdita massima più bassa. La fascia PEG 1-2 da sola rendeva meno.
+- Un titolo in fascia "allargata" richiede di verificare il PEG prospettico, come prima.
+- **`new_today` aumenta il primo giorno**, perché entrano i titoli con PEG fra 1 e 2. Non sono "nuovi" in senso stretto.

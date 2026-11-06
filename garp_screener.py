@@ -591,7 +591,7 @@ def write_snapshot(screener, rows):
               "crescita_eps_attesa", "revisione_stime_90g", "sorpresa_utili_ultimo",
               "sorpresa_utili_media4", "fcf_yield", "score",
               "revenue_growth_qoq_yoy", "pct_of_52w_high", "criteri_nuovi",
-              "fascia_peg", "punteggio_garp"]
+              "fascia_peg", "punteggio_garp", "top30"]
     with open(os.path.join(folder, f"{today}.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
@@ -682,13 +682,7 @@ def screen_ticker(symbol, index_name):
         checks["de_ok"] = de is not None and (de / 100.0) < CRITERIA["debt_equity_max"]
         checks["fcf_ok"] = fcf is not None and fcf > CRITERIA["fcf_min"]
         checks["rev_qoq_ok"] = rev_g is not None and rev_g > CRITERIA["sales_qoq_min"]
-        # 06/11/2026: un trimestre sporcato da una tantum (base dell'anno prima)
-        # non basta a bocciare se le stime per l'anno prossimo sono in crescita
-        fwd_eps, ttm_eps = info.get("forwardEps"), info.get("trailingEps")
-        eps_stime_ok = (fwd_eps is not None and ttm_eps is not None and ttm_eps > 0
-                        and fwd_eps > ttm_eps)
-        eps_trim_ok = eps_g is not None and eps_g > CRITERIA["eps_qoq_min"]
-        checks["eps_qoq_ok"] = eps_trim_ok or eps_stime_ok
+        checks["eps_qoq_ok"] = eps_g is not None and eps_g > CRITERIA["eps_qoq_min"]
         checks["peg_ok"] = peg is not None and 0 < peg < CRITERIA["peg_max"]
 
         if missing_is_decisive(missing, checks):
@@ -712,7 +706,6 @@ def screen_ticker(symbol, index_name):
             "fcf_yield": fcf_yield(fcf, mcap),
             "revenue_growth_qoq_yoy": rev_g,
             "eps_growth_qoq_yoy": eps_g,
-            "eps_tolleranza_stime": (not eps_trim_ok) and eps_stime_ok,
             "peg": peg,
             "peg_source": peg_src,
             "checks": checks,
@@ -898,38 +891,36 @@ def _rank_pct(values, higher_is_better=True):
     return out
 
 
-# Pesi del punteggio GARP (06/11/2026): il PEG resta il criterio principale
-# ma non l'unico. Somma = 100.
+# Pesi del punteggio GARP (06/11/2026, dal backtest REPORT_garp_peg2_2026-11-06):
+# solo le variabili dei filtri; la misura di redditivita' (ROE, margine EBITDA,
+# EBITDA/EV) non cambia il risultato in modo robusto, si tiene il ROE. Somma = 100.
 PESI_PUNTEGGIO = {
-    "peg": 35,                   # PEG prospettico se c'e', altrimenti trailing; piu' basso = meglio
-    "revisione_stime_90g": 20,   # stime in salita: il segnale piu' predittivo nei backtest
-    "sales_cagr_multi_year": 15,
-    "revenue_growth_qoq_yoy": 10,
-    "roe": 10,
-    "fcf_yield": 10,
+    "peg": 30,                     # PEG trailing dello screener; piu' basso = meglio
+    "revenue_growth_qoq_yoy": 12,
+    "eps_growth_qoq_yoy": 12,
+    "sales_cagr_multi_year": 12,
+    "roe": 12,
+    "fcf_yield": 11,
+    "debt_to_equity": 11,          # piu' basso = meglio
 }
+MENO_E_MEGLIO = {"peg", "debt_to_equity"}
+TOP_N = 30   # nel backtest il portafoglio dei primi 30 per punteggio batte la lista intera
 
 
 def add_score(passed):
-    """Aggiunge a ogni promosso: fascia_peg, peg_usato_punteggio, punteggio_garp (0-100)."""
+    """Aggiunge a ogni promosso: fascia_peg, punteggio_garp (0-100), top30."""
     for r in passed:
         peg = r.get("peg")
         r["fascia_peg"] = ("classica" if peg is not None and peg < CRITERIA["peg_classico_max"]
                            else "allargata")
-        pp = r.get("peg_prospettico")
-        r["peg_usato_punteggio"] = pp if (pp is not None and pp > 0) else peg
     if not passed:
         return
-    cols = {
-        "peg": _rank_pct([r["peg_usato_punteggio"] for r in passed], higher_is_better=False),
-        "revisione_stime_90g": _rank_pct([r.get("revisione_stime_90g") for r in passed]),
-        "sales_cagr_multi_year": _rank_pct([r.get("sales_cagr_multi_year") for r in passed]),
-        "revenue_growth_qoq_yoy": _rank_pct([r.get("revenue_growth_qoq_yoy") for r in passed]),
-        "roe": _rank_pct([r.get("roe") for r in passed]),
-        "fcf_yield": _rank_pct([r.get("fcf_yield") for r in passed]),
-    }
+    cols = {k: _rank_pct([r.get(k) for r in passed], higher_is_better=k not in MENO_E_MEGLIO)
+            for k in PESI_PUNTEGGIO}
     for i, r in enumerate(passed):
         r["punteggio_garp"] = round(sum(PESI_PUNTEGGIO[k] * cols[k][i] for k in PESI_PUNTEGGIO), 1)
+    for pos, r in enumerate(sorted(passed, key=lambda r: -r["punteggio_garp"])):
+        r["top30"] = pos < TOP_N
 
 
 def make_report(results, universe_size, started):
@@ -973,6 +964,7 @@ def make_report(results, universe_size, started):
         "passed_fascia_allargata": sum(1 for r in passed if r.get("fascia_peg") == "allargata"),
         "ordinamento_passed": "punteggio_garp decrescente (prima del 06/11/2026: peg crescente)",
         "pesi_punteggio": PESI_PUNTEGGIO,
+        "top_n": TOP_N,
         "new_today": [r["ticker"] for r in new_today],
         "dropped_since_yesterday": dropped,
         "passed": passed,
@@ -1004,14 +996,14 @@ def make_report(results, universe_size, started):
         f" | PEG {CRITERIA['peg_classico_max']:g}-{CRITERIA['peg_max']:g} (fascia allargata):"
         f" {report['passed_fascia_allargata']} | Ordinati per punteggio (0-100)",
         "",
-        "| Ticker | Nome | Indice | Settore | Punteggio | PEG | Fascia | ROE | D/E | Ricavi q/q | EPS q/q | CAGR ricavi | Nuovo |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "| Ticker | Nome | Indice | Settore | Punteggio | Top 30 | PEG | Fascia | ROE | D/E | Ricavi q/q | EPS q/q | CAGR ricavi | Nuovo |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in passed:
         lines.append(
-            "| {t} | {n} | {i} | {s} | {sc} | {peg:.2f} | {fa} | {roe} | {de:.2f} | {rg} | {eg} | {cagr} | {new} |".format(
+            "| {t} | {n} | {i} | {s} | {sc} | {top} | {peg:.2f} | {fa} | {roe} | {de:.2f} | {rg} | {eg} | {cagr} | {new} |".format(
                 t=r["ticker"], n=(r.get("name") or "")[:34], i=r["index"],
-                sc=r.get("punteggio_garp"), fa=r.get("fascia_peg") or "",
+                sc=r.get("punteggio_garp"), top="✅" if r.get("top30") else "", fa=r.get("fascia_peg") or "",
                 s=r.get("sector") or "", peg=r.get("peg") or 0,
                 roe=fmt_pct(r.get("roe")), de=r.get("debt_to_equity") or 0,
                 rg=fmt_pct(r.get("revenue_growth_qoq_yoy")),
