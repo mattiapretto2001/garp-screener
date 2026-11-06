@@ -54,7 +54,8 @@ CRITERIA = {
     "eps_qoq_min": 0.05,           # crescita utili trimestrale YoY
     "roe_min": 0.15,
     "debt_equity_max": 1.0,
-    "peg_max": 1.0,
+    "peg_max": 2.0,                # allargato il 06/11/2026 (era 1.0): PEG 1-2 = fascia "allargata"
+    "peg_classico_max": 1.0,       # sotto questa soglia la fascia e' "classica" (il GARP storico)
     "fcf_min": 0.0,
     "min_market_cap": 0,           # nessun filtro dimensionale: universo massimo
 }
@@ -589,7 +590,8 @@ def write_snapshot(screener, rows):
     fields = ["date", "stato", "ticker", "price", "market_cap", "peg", "peg_prospettico",
               "crescita_eps_attesa", "revisione_stime_90g", "sorpresa_utili_ultimo",
               "sorpresa_utili_media4", "fcf_yield", "score",
-              "revenue_growth_qoq_yoy", "pct_of_52w_high", "criteri_nuovi"]
+              "revenue_growth_qoq_yoy", "pct_of_52w_high", "criteri_nuovi",
+              "fascia_peg", "punteggio_garp", "top30"]
     with open(os.path.join(folder, f"{today}.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
@@ -874,13 +876,59 @@ def load_partials(prefix):
     return all_results, usize
 
 
+def _rank_pct(values, higher_is_better=True):
+    """Percentile 0-1 di ciascun valore (None -> 0.5, neutro)."""
+    known = sorted(v for v in values if v is not None)
+    out = []
+    for v in values:
+        if v is None or not known:
+            out.append(0.5)
+            continue
+        below = sum(1 for k in known if k < v)
+        equal = sum(1 for k in known if k == v)
+        p = (below + 0.5 * equal) / len(known)
+        out.append(p if higher_is_better else 1.0 - p)
+    return out
+
+
+# Pesi del punteggio GARP (06/11/2026, dal backtest REPORT_garp_peg2_2026-11-06):
+# solo le variabili dei filtri; la misura di redditivita' (ROE, margine EBITDA,
+# EBITDA/EV) non cambia il risultato in modo robusto, si tiene il ROE. Somma = 100.
+PESI_PUNTEGGIO = {
+    "peg": 30,                     # PEG trailing dello screener; piu' basso = meglio
+    "revenue_growth_qoq_yoy": 12,
+    "eps_growth_qoq_yoy": 12,
+    "sales_cagr_multi_year": 12,
+    "roe": 12,
+    "fcf_yield": 11,
+    "debt_to_equity": 11,          # piu' basso = meglio
+}
+MENO_E_MEGLIO = {"peg", "debt_to_equity"}
+TOP_N = 30   # nel backtest il portafoglio dei primi 30 per punteggio batte la lista intera
+
+
+def add_score(passed):
+    """Aggiunge a ogni promosso: fascia_peg, punteggio_garp (0-100), top30."""
+    for r in passed:
+        peg = r.get("peg")
+        r["fascia_peg"] = ("classica" if peg is not None and peg < CRITERIA["peg_classico_max"]
+                           else "allargata")
+    if not passed:
+        return
+    cols = {k: _rank_pct([r.get(k) for r in passed], higher_is_better=k not in MENO_E_MEGLIO)
+            for k in PESI_PUNTEGGIO}
+    for i, r in enumerate(passed):
+        r["punteggio_garp"] = round(sum(PESI_PUNTEGGIO[k] * cols[k][i] for k in PESI_PUNTEGGIO), 1)
+    for pos, r in enumerate(sorted(passed, key=lambda r: -r["punteggio_garp"])):
+        r["top30"] = pos < TOP_N
+
+
 def make_report(results, universe_size, started):
     errors = sum(1 for r in results if r.get("error"))
 
-    passed = sorted(
-        [r for r in results if r.get("passed")],
-        key=lambda r: (r.get("peg") if r.get("peg") is not None else 9e9),
-    )
+    passed = [r for r in results if r.get("passed")]
+    add_score(passed)
+    passed.sort(key=lambda r: -r["punteggio_garp"])
     # "Quasi": passano tutto tranne UN criterio (utile come watchlist)
     near_miss = []
     for r in results:
@@ -912,6 +960,11 @@ def make_report(results, universe_size, started):
         "errors": errors,
         "passed_count": len(passed),
         "passed_con_riacquisti": sum(1 for r in passed if r.get("riacquisti_netti")),
+        "passed_fascia_classica": sum(1 for r in passed if r.get("fascia_peg") == "classica"),
+        "passed_fascia_allargata": sum(1 for r in passed if r.get("fascia_peg") == "allargata"),
+        "ordinamento_passed": "punteggio_garp decrescente (prima del 06/11/2026: peg crescente)",
+        "pesi_punteggio": PESI_PUNTEGGIO,
+        "top_n": TOP_N,
         "new_today": [r["ticker"] for r in new_today],
         "dropped_since_yesterday": dropped,
         "passed": passed,
@@ -939,14 +992,18 @@ def make_report(results, universe_size, started):
         f"Universo: {universe_size} titoli | Superano tutti i filtri: **{len(passed)}**"
         f" | Nuovi oggi: **{len(new_today)}** | Usciti: {len(dropped)}"
         f" | Non valutabili: {errors}",
+        f"PEG < {CRITERIA['peg_classico_max']:g} (fascia classica): {report['passed_fascia_classica']}"
+        f" | PEG {CRITERIA['peg_classico_max']:g}-{CRITERIA['peg_max']:g} (fascia allargata):"
+        f" {report['passed_fascia_allargata']} | Ordinati per punteggio (0-100)",
         "",
-        "| Ticker | Nome | Indice | Settore | PEG | ROE | D/E | Ricavi q/q | EPS q/q | CAGR ricavi | Nuovo |",
-        "|---|---|---|---|---|---|---|---|---|---|---|",
+        "| Ticker | Nome | Indice | Settore | Punteggio | Top 30 | PEG | Fascia | ROE | D/E | Ricavi q/q | EPS q/q | CAGR ricavi | Nuovo |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in passed:
         lines.append(
-            "| {t} | {n} | {i} | {s} | {peg:.2f} | {roe} | {de:.2f} | {rg} | {eg} | {cagr} | {new} |".format(
+            "| {t} | {n} | {i} | {s} | {sc} | {top} | {peg:.2f} | {fa} | {roe} | {de:.2f} | {rg} | {eg} | {cagr} | {new} |".format(
                 t=r["ticker"], n=(r.get("name") or "")[:34], i=r["index"],
+                sc=r.get("punteggio_garp"), top="✅" if r.get("top30") else "", fa=r.get("fascia_peg") or "",
                 s=r.get("sector") or "", peg=r.get("peg") or 0,
                 roe=fmt_pct(r.get("roe")), de=r.get("debt_to_equity") or 0,
                 rg=fmt_pct(r.get("revenue_growth_qoq_yoy")),
