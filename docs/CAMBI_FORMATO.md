@@ -147,3 +147,4 @@ Il campo esistente `errors` resta la lista dei ticker in errore.
 - Per le proposte usare `punteggio_garp` come ordine di merito, non come segnale d'acquisto.
 - Un titolo in fascia "allargata" richiede di verificare il PEG prospettico come prima.
 - `new_today` aumenta parecchio il primo giorno, perché entrano i PEG 1-2: non sono "nuovi" in senso stretto.
+- `eps_tolleranza_stime` (nuovo campo su ogni titolo analizzato): `true` se il titolo supera il filtro sugli utili trimestrali solo grazie alla tolleranza. La tolleranza vale quando la crescita trimestrale degli utili non supera la soglia del 5%, ma le stime sull'utile dell'anno prossimo (`forwardEps`) sono sopra l'utile degli ultimi 12 mesi (`trailingEps` > 0). Sui dati del 06/11 lo stadio 1 sale da circa 292 a circa 325 titoli; fra gli altri entrano SPOT e NBIX.

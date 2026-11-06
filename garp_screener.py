@@ -682,7 +682,13 @@ def screen_ticker(symbol, index_name):
         checks["de_ok"] = de is not None and (de / 100.0) < CRITERIA["debt_equity_max"]
         checks["fcf_ok"] = fcf is not None and fcf > CRITERIA["fcf_min"]
         checks["rev_qoq_ok"] = rev_g is not None and rev_g > CRITERIA["sales_qoq_min"]
-        checks["eps_qoq_ok"] = eps_g is not None and eps_g > CRITERIA["eps_qoq_min"]
+        # 06/11/2026: un trimestre sporcato da una tantum (base dell'anno prima)
+        # non basta a bocciare se le stime per l'anno prossimo sono in crescita
+        fwd_eps, ttm_eps = info.get("forwardEps"), info.get("trailingEps")
+        eps_stime_ok = (fwd_eps is not None and ttm_eps is not None and ttm_eps > 0
+                        and fwd_eps > ttm_eps)
+        eps_trim_ok = eps_g is not None and eps_g > CRITERIA["eps_qoq_min"]
+        checks["eps_qoq_ok"] = eps_trim_ok or eps_stime_ok
         checks["peg_ok"] = peg is not None and 0 < peg < CRITERIA["peg_max"]
 
         if missing_is_decisive(missing, checks):
@@ -706,6 +712,7 @@ def screen_ticker(symbol, index_name):
             "fcf_yield": fcf_yield(fcf, mcap),
             "revenue_growth_qoq_yoy": rev_g,
             "eps_growth_qoq_yoy": eps_g,
+            "eps_tolleranza_stime": (not eps_trim_ok) and eps_stime_ok,
             "peg": peg,
             "peg_source": peg_src,
             "checks": checks,
