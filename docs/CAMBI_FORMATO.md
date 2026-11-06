@@ -117,3 +117,33 @@ Il campo esistente `errors` resta la lista dei ticker in errore.
 - yfinance non solleva gli errori HTTP di `.info`: restituisce un dizionario vuoto e scrive l'errore nel suo logger. Lo screener legge quel logger per dire se un `.info` vuoto viene da un limite di frequenza (401 "Invalid Crumb", 429) o da un ticker inesistente (404).
 - `portafoglio.txt` è facoltativo, un ticker per riga, `#` per i commenti. Non è nel repository: le posizioni non vanno nel repository pubblico.
 - Nei parziali (`partials/*.json`) i titoli in errore hanno `error` con la causa originale, più `error_type` e `tentativi`. Prima `error` valeva "irrecuperabile dopo i retry".
+
+## 06/11/2026: GARP con PEG fino a 2 e punteggio
+
+### Cosa cambia nel filtro
+
+- `criteria.peg_max` passa da 1.0 a **2.0**. I promossi aumentano: sui dati del 06/11 lo stadio 1 passa da circa 204 a circa 292 titoli, prima del filtro sul CAGR dei ricavi.
+- Nuovo criterio `criteria.peg_classico_max` = 1.0, che separa le due fasce.
+
+### `results/latest.json`: campi nuovi (nessuno tolto o rinominato)
+
+- Su ogni titolo di `passed`:
+  - `fascia_peg`: `"classica"` (PEG < 1) oppure `"allargata"` (PEG 1-2).
+  - `punteggio_garp`: da 0 a 100, è il percentile pesato fra i promossi del giorno. Pesi: PEG 35 (il prospettico se c'è, altrimenti il trailing; più basso è meglio), revisione delle stime a 90 giorni 20, CAGR dei ricavi 15, crescita dei ricavi trimestrale 10, ROE 10, rendimento del FCF 10. Un dato mancante vale come mediano.
+  - `peg_usato_punteggio`: il PEG usato nel punteggio.
+- In testa al report:
+  - `passed_fascia_classica` e `passed_fascia_allargata`: i conteggi delle due fasce.
+  - `pesi_punteggio`: i pesi qui sopra.
+  - `ordinamento_passed`: spiega l'ordine di `passed`.
+
+### Cosa cambia nel comportamento
+
+- **`passed` è ordinato per `punteggio_garp` decrescente**, non più per PEG crescente. Chi vuole l'ordine di prima ordina per `peg`.
+- **`latest.md`:** una riga con i conteggi delle due fasce e due colonne nuove nella tabella, "Punteggio" e "Fascia".
+- **`snapshots/garp/*.csv`:** due colonne nuove in coda, `fascia_peg` e `punteggio_garp`. Nel Moonshot restano vuote.
+
+### Cosa può usare la routine
+
+- Per le proposte usare `punteggio_garp` come ordine di merito, non come segnale d'acquisto.
+- Un titolo in fascia "allargata" richiede di verificare il PEG prospettico come prima.
+- `new_today` aumenta parecchio il primo giorno, perché entrano i PEG 1-2: non sono "nuovi" in senso stretto.
