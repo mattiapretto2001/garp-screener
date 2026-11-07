@@ -474,3 +474,217 @@ Già comprese nelle sezioni sopra; qui l'elenco, per chi aveva letto la prima ve
 3. **Doppioni negli esclusi:** una riga per titolo; campo nuovo `liste_origine`; `esclusi_sicurezza_count` conta il titolo una volta.
 4. **Lista:** una riga core o top 30 senza ticker viene saltata; un file sorgente con solo `{}` dà un avviso.
 5. **Stime EODHD:** un record di forma inattesa non fa perdere il file della notte (esito `dati_non_validi`); esito `limite_frequenza` dopo i 429 e pausa comune ai thread; riserva di crediti 5.000 invece di 20.000 e recupero dei titoli con la fotografia più vecchia; colonna nuova `recupero`.
+
+## 08/11/2026 (2): Crescita per fascia, Qualità durevole, Temi non testati, Trade Republic (ramo `claude/crescita-qualita-tr`)
+
+Le scelte vengono da `REPORT_screener_tutti_2026-11-07.md` (Crescita = regole Moonshot a ogni taglia; Qualità Q3), `R_storico_2000_2011.md` (il momentum non è confermato sul 2000-2011) e `R_periodo_pulito_2018_2026.md`.
+Nessun campo esistente è stato tolto o rinominato: nella lista da radiografare `punteggi` tiene le chiavi `Radar A` e `Moonshot` accanto alla nuova `Crescita` (paragrafo 4).
+
+### 1. Moonshot diventa la lista "Crescita" (`results-moonshot/`)
+
+**Regole cambiate.**
+
+- **Nessun tetto di capitalizzazione** (era 15 Mld$): le regole Moonshot valgono a ogni taglia, da 150 M$ in su. In `criteria` la chiave `mcap_max` resta, con valore `null`.
+- **Capitalizzazione e ricavi in dollari**, con i cambi indicativi della Svolta (`FX_USD`). Prima erano confrontati nella valuta di quotazione: 15 Mld di corone svedesi sono 1,4 Mld$, quindi le svedesi, norvegesi e danesi passavano soglie molto più basse. Effetto: escono le società sotto 150 M$ o con ricavi sotto 100 M$ in dollari.
+  La capitalizzazione si converte dalla valuta di quotazione (`currency`), i **ricavi dalla valuta di bilancio** (`financialCurrency` di Yahoo; se manca, dalla valuta di quotazione). Correzione della seconda revisione: Troax (TROAX.ST) quota in corone ma pubblica in euro, molte ADR quotano in dollari e pubblicano in yuan, rupie o dollari canadesi.
+- **Punteggio:** "prezzo entro il 10% dal massimo a 52 settimane" vale **0,5** (era 1). Il momentum non è confermato sul 2000-2011, quindi non gli si dà più peso. Punteggio massimo 7,5 (era 8); `score` può avere il mezzo punto (es. 6.5).
+- **Il filtro "prezzo sopra la media a 200 giorni" resta.** È parte delle regole provate (la Crescita batte l'universo in ogni fascia), e il prezzo vicino al massimo è uno dei freni ai crolli confermati. Il 70% del massimo resta solo l'etichetta `momentum_solo_200gg`.
+
+**Differenze dalla regola provata nel backtest** (regola CR di `scr_common.py`):
+
+- **Soglia minima 150 M$ invece di 300 M$.** Il backtest partiva da 300 M$ perché sotto non aveva dati: la fascia 150-300 M$ **non è testata**. Sono titoli della fascia piccola, quindi già marcati `alto_rischio`.
+- **Prezzo ≥ 70% del massimo a 52 settimane: nel backtest era un filtro, qui è solo un'etichetta** (`momentum_solo_200gg`), come nel codice dal 27/10/2026. Il report del backtest dice che la versione con la sola media a 200 giorni dà quasi lo stesso risultato (−0,2 punti l'anno).
+
+**Campi nuovi sui titoli** (`passed` e risultati):
+
+| Campo | Significato |
+|---|---|
+| `currency` | Valuta di quotazione (da Yahoo). |
+| `market_cap_usd` | Capitalizzazione in dollari (cambi indicativi). |
+| `fascia_dimensione` | `"piccola"` (0,15-2 Mld$), `"media"` (2-15), `"grande"` (oltre 15); `null` se la capitalizzazione manca o è sotto 150 M$. |
+| `alto_rischio` | `true` per la fascia piccola. Nel backtest la fascia piccola ha reso come le altre nel mondo, ma nelle americane piccole e medie le regole hanno fatto peggio del mercato (circa −2 punti l'anno) e in Europa e Asia il risultato è fragile. |
+| `alto_rischio_motivo` | Il motivo in italiano (distingue le americane dalle altre); `null` se non è ad alto rischio. |
+| `financial_currency` | Valuta in cui Yahoo dà i ricavi (`financialCurrency`; se manca, `currency`). Seconda revisione. |
+| `revenue_ttm_usd` | Ricavi 12 mesi in dollari, usati da `checks.revenue_scale_ok`; `null` se la valuta di bilancio non è nella tabella dei cambi. `revenue_ttm` resta il valore di Yahoo, nella valuta di bilancio. Seconda revisione. |
+| `score_componenti` | Dettaglio del punteggio: `accelerazione` 2, `margine_operativo_in_salita` 1, `fcf_positivo` 1, `cassa_netta` 1, `vicino_al_massimo` 0,5, `stime_eps_al_rialzo_30g` 1, `stime_anno_prossimo_10pct_90g` 1 (solo le voci prese). |
+
+**Campi nuovi in testa:**
+
+- `crescita_per_fascia`: un oggetto con `regola` (testo) e, per `piccola`, `media` e `grande`: `da_mld_usd`, `a_mld_usd` (`null` per la grande), `conteggio`, `alto_rischio`, `ticker` (lista completa nell'ordine del punteggio) e `titoli` (ticker, `name`, `score`, `country`, `market_cap_usd`, `alto_rischio`, `alto_rischio_motivo`). In più `senza_fascia` (`conteggio`, `ticker`), che di norma è vuoto.
+- `criteria`: chiavi nuove `fascia_piccola_max` (2e9), `fascia_media_max` (15e9), `bonus_vicino_massimo` (0.5).
+
+**Cambi di significato:**
+
+1. `passed` contiene fino a **250** titoli (erano 100), perché ora ci sono anche le grandi. `passed_count` resta il totale.
+2. `checks.mcap_ok` e `checks.revenue_scale_ok` confrontano valori in dollari.
+
+**`latest.md`:** colonna "Fascia" nella tabella (⚠ = alto rischio), riga "Per fascia" in testa e una sezione per fascia in fondo con tutti i ticker e il punteggio.
+
+### 2. Qualità durevole (`results-qualita/`, cartella nuova)
+
+Script nuovo `qualita_screener.py`, nel job di merge prima della lista da radiografare.
+File: `results-qualita/latest.json`, `latest.md`, `<data>.json` e `derivati_eodhd.json` (cache).
+
+**Regola Q3** (fissata prima dei test, `scr_common.py` del backtest):
+
+- **base:** capitalizzazione ≥ 5 Mld$; ricavi cresciuti almeno dell'8% l'anno in 5 anni (6 bilanci annuali), con al massimo 1 anno in calo; debito basso (cassa netta, oppure debito netto non oltre 2,5 volte l'utile operativo degli ultimi 12 mesi); PEG ≤ 3 o non calcolabile;
+- **Q1 "rendimento del capitale":** ROE ≥ 15% in almeno 4 anni su 5, e margine operativo dell'ultimo anno non sotto la media dei 5 anni di oltre 2 punti;
+- **Q2 "margini":** margine operativo ≥ 20% in almeno 4 anni su 5, stessa stabilità, margine lordo non sceso di oltre 2 punti in 4 anni (se noto);
+- **Q3 = Q1 oppure Q2.**
+
+**Settori:** esclusioni del GARP, con l'eccezione di pagamenti e dati finanziari (industrie Yahoo "Credit Services" e "Financial Data & Stock Exchanges": Mastercard, Visa, S&P Global).
+Il backtest l'ha provata dopo, con effetto nullo sul passato, e la raccomanda se si vogliono tenere Mastercard e Visa.
+Si toglie con la variabile `QUALITA_ECCEZIONE_PAGAMENTI=0`.
+
+**Cosa aspettarsi.** Nel backtest Q3 non batte il mercato delle grandi (+0,6 punti l'anno nel 2012-26, +3,4 nel 2018-26), ma oscilla meno e ha meno crolli. È la parte "stabile" accanto al core GARP. In Europa non ha funzionato.
+
+**Dati e crediti EODHD.**
+
+- Primo filtro sulla cache `.info` del GARP (`partials/info-*.json`; in mancanza, l'ultima fotografia `snapshots/universo/*.csv.gz`): azioni, settore ammesso, capitalizzazione ≥ 5 Mld$, **ROE Yahoo oltre il 15% oppure margine lordo Yahoo oltre il 50%** (il margine lordo solo se Yahoo lo dà; seconda revisione, prima solo il ROE). Con l'universo del 06/11 sono **837 titoli, 797 società** (786 coperte da EODHD); con il solo ROE erano 605 titoli, 581 società.
+- Solo per questi, i bilanci EODHD (annuali e trimestrali, 10 crediti a società; le doppie quotazioni con lo stesso nome si scaricano una volta). Yahoo dà solo 4 bilanci annuali, Q3 ne vuole 6.
+- Borse coperte: quelle della fotografia delle stime più Hong Kong, Vienna, Lisbona e Dublino. **Milano non c'è** (EODHD non la copre): le società con doppia quotazione (es. Ferrari) si scaricano dall'altra borsa, le altre finiscono in `senza_dati`.
+- Cache: ogni società ha un **giorno feriale fisso di rinnovo** (crc32 del ticker, modulo 5: lunedì-venerdì) e si riscarica quel giorno se il dato ha almeno 3 giorni (`QUALITA_RINNOVO_GIORNI` − 4; default 7), oppure in qualunque giorno quando ha 9 giorni o più (`QUALITA_RINNOVO_GIORNI` + 2: turno saltato per un festivo o una notte fallita). I codici che EODHD non conosce si riprovano dopo 28 giorni. Con `QUALITA_RINNOVO_GIORNI` sotto 7 vale solo l'età.
+- **Crediti:** la prima notte si scarica tutto, circa **7.900 crediti** (786 società; con il solo ROE erano circa 5.800). Poi ogni notte circa un quinto delle società, **1.400-1.800 crediti** (media circa 1.600; con il solo ROE 1.000-1.300). Nella prima settimana le società del turno di giovedì e venerdì si riscaricano già dopo 3-4 giorni, per entrare nel loro turno (le due notti dopo la prima non scaricano nulla). Senza i turni sarebbero stati circa 5.800 crediti in una sola notte ogni settimana, non 800-900 a notte come scritto nella prima versione di questa nota. Un dato con più di 45 giorni non si usa (`QUALITA_SCADENZA_GIORNI`).
+- Tetto `QUALITA_CAP_CREDITI` (15.000), riserva `QUALITA_RESIDUO_MIN` (5.000: il tetto della notte non supera i crediti che restano sopra la riserva), tempo massimo `QUALITA_TEMPO_MAX_S` (900 s).
+- **Licenza:** nei file ci sono solo valori derivati: esiti sì/no, numero di anni sopra soglia (0-5), punteggio, data di chiusura dell'ultimo bilancio annuale, sì/no "azioni oltre +25% in un anno". Nessun importo né rapporto EODHD. Capitalizzazione, prezzo, ROE e PEG vengono da Yahoo, come negli altri screener.
+
+**`latest.json`, campi in testa:** `screener` ("qualita"), `date`, `generated_at_utc`, `duration_seconds`, `criteria`, `eccezione_industrie`, `regola`, `nota`, `punteggio_uso`, `licenza`, `fonte_info`, `primo_filtro` (conteggi: `universo`, `non_azioni`, `settore`, `capitalizzazione`, `roe`, `candidati`; dalla seconda revisione anche `solo_margine_lordo`), `societa_valutate`, `senza_dati_count`, `senza_dati` (ticker, `altri_ticker`, `name`, `motivo`), `passed_count`, `q1_count`, `q2_count`, `new_today`, `dropped_since_yesterday`, `eodhd` (crediti usati, esiti, interruzione, residuo all'inizio e alla fine), `seguiti` (esito per ogni titolo di `watchlist.txt` e `schede_fatte.txt`: `"in lista"` con `regole`, `"no"`, `"senza dati EODHD"` o `"fuori dal primo filtro"`, con `motivi`), `passed`, `bocciati` (ticker, `name`, `market_cap_usd`, `motivi_no`, `esito_eodhd`).
+
+**Campi dei titoli in `passed`:** `ticker`, `altri_ticker`, `name`, `sector`, `industry`, `country`, `currency`, `market_cap`, `market_cap_usd`, `price`, `pct_of_52w_high`, `roe_yahoo`, `peg`, `peg_source`, `eccezione_settore`, `codice_eodhd`, `dati_eodhd_del`, `esito_eodhd`, `ultimo_anno_fiscale`, `q1`, `q2`, `q3`, `passed`, `punteggio` (0-6, solo per ordinare: Q1, Q2, ROE ≥ 15% in tutti e 5 gli anni, margine ≥ 20% in tutti e 5, nessun anno di ricavi in calo, cassa netta; non provato nel backtest), `roe_stabile` (sì/no), `anni_roe_15`, `margini_alti`, `anni_margine_20`, `margine_non_in_calo`, `margine_lordo_stabile` (`null` = non noto), `crescita_ricavi_ok`, `anni_in_calo`, `debito_basso`, `cassa_netta`, `peg_ok`, `storico_5_anni`, `motivi_no` (vuota per i promossi), `azioni_oltre_25_1a`.
+
+**`azioni_oltre_25_1a`** (sì/no, `null` = non noto): azioni in circolazione cresciute di oltre il 25% in un anno, dallo stato patrimoniale EODHD (`commonStockSharesOutstanding`, trimestrale e se manca annuale). Confronta l'ultimo dato con il più recente fra 12 e 18 mesi prima, come nel backtest.
+- È `null` se mancano i dati, se l'ultimo dato ha più di 15 mesi, o se il rapporto sembra un frazionamento non corretto da EODHD: 1,5, 2, 3 o 4 volte, ±3% (es. Amphenol 2:1 nel 2024), oppure oltre 4,5 volte o sotto un quinto (unità sbagliate).
+- **Non esclude dalla Qualità:** serve alla guardia di sicurezza della lista da radiografare. Nel `latest.md` della Qualità, se è sì, la colonna Note dice "⚠ azioni oltre +25% in un anno".
+- Si pubblica solo il sì/no, non la variazione in numeri, per la licenza EODHD.
+- Le società in cache da prima di questo cambio non hanno il campo (`null`) fino al rinnovo, al massimo 9 giorni.
+- In `criteria`: chiave nuova `diluizione_1a_soglia` (0.25, la stessa `sicurezza_diluizione_max` del GARP).
+- Prova sui bilanci EODHD già scaricati per il backtest (5.121 società, nessun credito): Amphenol 2024 (frazionamento 2:1 non corretto) dà `null`; AMD 2022 (acquisizione di Xilinx pagata in azioni, +32%) dà sì; Nvidia, Walmart e Chipotle, che hanno frazionato nel 2024, danno no. Prova con dati EODHD veri il 07/11 (50 crediti): ASML, Meta, Atlas Copco, EMCOR, Heico danno no.
+
+**Prova del 07/11 su 20 società** (dati EODHD veri, 200 crediti): in lista ASML, Monolithic Power, Nvidia, Microsoft, Visa, Mastercard, Halozyme, Meta, KLA, Atlas Copco, EMCOR, L'Oréal, Heico, Tencent. Fuori: S&P Global (ROE ≥ 15% in 1 anno su 5, margine lordo in calo), Safran (ROE e margini bassi nei bilanci pubblicati), Moody's (ricavi sotto +8% l'anno), Novo Nordisk, Hermès e Ferrari (PEG oltre 3). Come nel backtest.
+
+### 3. Temi (`results-temi/`): monitor non testato
+
+- Campi nuovi in testa a `latest.json`: `non_testato` (sempre `true`) e `nota_non_testato` ("Monitor: nessun vantaggio dimostrato; solo etichetta…").
+- In testa a `latest.md`: la stessa nota con "⚠️ Non testato".
+- Nient'altro cambia. Nella lista da radiografare il tema resta solo un'etichetta.
+
+### 4. Lista da radiografare (`results-lista/`)
+
+**Famiglie.** Radar A (dal GARP) e Moonshot diventano **una sola famiglia, "Crescita"**: una società conta una volta anche se è in tutte e due. Famiglia nuova **"Qualità"** (i promossi di `results-qualita/latest.json`).
+`famiglie` vale ora `["GARP", "Crescita", "Qualità", "Radar B", "Svolta"]`. I segnali `Radar A` e `Moonshot` restano distinti in `segnali`.
+Il punteggio della famiglia Crescita (`punteggi.Crescita`) è il migliore fra i due percentili.
+In `punteggi` **restano anche le chiavi di prima** `Radar A` e `Moonshot`, ciascuna con il percentile del suo segnale, come prima del 08/11/2026.
+`punteggio_medio` fa la media solo sulle famiglie (`famiglie`), quindi conta la Crescita una volta e le chiavi vecchie non lo cambiano.
+
+**Trade Republic.** Lo script legge il file facoltativo `disponibilita_tr.csv` (colonne `ticker`, `isin`, `acquistabile_tr`; accetta anche `flag` al posto di `acquistabile_tr`; `isin_tr` se c'è), creato da `aggiorna_disponibilita_tr.py`.
+- Per una società con più ticker vale il migliore: "probabile" > "incerto" > "probabilmente no".
+- Ticker assente dal file = "incerto".
+- File assente, vuoto, con la sola intestazione, senza righe con un ticker o non leggibile = "n.d." su tutte le righe, con un avviso in `avvisi` e `disponibilita_tr.letto` = `false`.
+- **I 5 della settimana:** prima i "probabile" non ancora radiografati, poi gli altri; dentro ogni gruppo le regole della seconda revisione (sotto: tipi a pari priorità e al massimo 1 ad alto rischio). L'ordine della lista non cambia.
+
+**Campi nuovi sulle righe** (`lista` ed `esclusi_sicurezza`):
+
+| Campo | Significato |
+|---|---|
+| `crescita_fascia` | Fascia della Crescita dal Moonshot (`"piccola"`, `"media"`, `"grande"`), `null` se non c'è. |
+| `alto_rischio` | `true` se il Moonshot la segna ad alto rischio (fascia piccola); in più l'etichetta `"crescita piccola: alto rischio"`. |
+| `acquistabile_tr` | `"probabile"`, `"incerto"`, `"probabilmente no"` o `"n.d."`. |
+| `isin` | ISIN del ticker principale (dal file Trade Republic). |
+| `isin_tr` | ISIN da cercare nell'app Trade Republic (es. quello dell'ADR), se il file lo indica. |
+| `diluizione_oltre_soglia` | Sì/no della Qualità (`azioni_oltre_25_1a`), `null` se la riga non viene dalla Qualità o il dato non è noto. La guardia lo usa **solo se manca `diluizione`** (il numero di GARP, Moonshot, Svolta o Temi vale di più). Con sì la riga va in `esclusi_sicurezza` con motivo `diluizione`; con no la diluizione non è più "mancante". |
+
+**Campi nuovi in testa:** `regola_tr`, `disponibilita_tr` (`file`, `letto`, `righe`), `conteggi_tr` (righe per valore di `acquistabile_tr`), `conteggi_segnali` (righe per segnale).
+
+**Cambi di significato:**
+
+1. `n_famiglie` conta Radar A e Moonshot una volta sola: alcuni titoli che prima erano "2 famiglie" ora sono "1".
+2. `conteggi_famiglie` ha le chiavi nuove `Crescita` e `Qualità`; le chiavi `Radar A` e `Moonshot` restano, ma ora contano le righe con quel **segnale**.
+3. `regola_famiglie` e `regola_settimana` descrivono le regole nuove.
+4. In `fonti` c'è la voce nuova `qualita`. Se il file manca, la famiglia è ignorata con un avviso.
+5. `sicurezza_dati_mancanti` e la colonna Sicurezza del `latest.md`: per le righe che vengono solo dalla Qualità la diluizione non risulta più mancante quando c'è il sì/no. Prima ogni riga solo-Qualità aveva "⚠ manca diluizione". Negli esclusi del `latest.md` il motivo è "azioni oltre +25% in un anno (Qualità, bilanci EODHD)".
+6. `regola_sicurezza`, `regola_tr` e il testo dell'avviso sul file Trade Republic ("assente, vuoto o non leggibile") descrivono le regole nuove.
+
+**`latest.md`:** colonna "TR" nella tabella; nei 5 della settimana "Trade Republic: …" e, se c'è, "ISIN da cercare"; riga "Trade Republic" con i conteggi; note su Crescita, alto rischio e temi non testati.
+
+### 5. Workflow (`.github/workflows/screener.yml`)
+
+- Job di merge: passo nuovo "Run Qualita screener (EODHD)" dopo "Merge Svolta results" e prima di "Build radiography list", con `continue-on-error`, il secret `EODHD_API_TOKEN`, `QUALITA_CAP_CREDITI` 15000, `QUALITA_RESIDUO_MIN` 5000, `QUALITA_TEMPO_MAX_S` 900.
+- Il commit aggiunge `results-qualita/`.
+- `paths-ignore`: aggiunti `results-qualita/**` e `disponibilita_tr.csv`.
+- Tempo massimo del job di merge: 90 minuti (era 45; 60 nella prima versione di questo ramo).
+- Crediti EODHD per notte: Qualità al massimo 15.000 (la prima notte circa 7.900, poi 1.400-1.800) prima delle stime degli analisti (tetto 25.000). La riserva di 5.000 vale per tutti e due.
+
+### Cosa può usare la Regia
+
+- **Crescita:** `results-moonshot/latest.json` → `crescita_per_fascia`. Le "media" e "grande" sono la parte più solida (sopra i 2 Mld$: +6,9 punti l'anno nel backtest); le "piccola" vanno proposte solo come alto rischio, una alla volta.
+- **Qualità:** `results-qualita/latest.json` → `passed`, per la parte stabile del portafoglio; `seguiti` dice perché un titolo seguito (es. S&P Global, Safran) non c'è. Non presentarla come lista che batte il mercato.
+- **Radiografie della settimana:** come prima, `results-lista/latest.json` → `settimana`; mostrare anche `acquistabile_tr` e, se c'è, `isin_tr`. La disponibilità su Trade Republic è una deduzione: va controllata nell'app. Dalla seconda revisione la settimana ha al massimo 1 titolo ad alto rischio e può avere meno di 5 nomi; `tipo_settimana` dice perché un titolo è stato preferito a un altro.
+- **Temi:** solo etichetta (`non_testato` = true): non proporli come segnale d'acquisto.
+
+### Correzioni dopo la revisione
+
+Già comprese nei paragrafi sopra; qui l'elenco, per chi aveva letto la prima versione.
+
+1. **`punteggi` della lista:** tornano le chiavi `Radar A` e `Moonshot` accanto a `Crescita`. Nella prima versione sparivano, contro la regola "si aggiunge soltanto".
+2. **File Trade Republic vuoto o con la sola intestazione:** ora vale come file assente ("n.d." e avviso). Prima ogni riga diventava "incerto" senza avviso.
+3. **`aggiorna_disponibilita_tr.py`:** negli errori stampa solo il tipo di errore, mai il testo. Il testo di `requests` contiene l'URL con `api_token`, e lo script si lancia a mano, fuori da GitHub Actions, dove nessuno maschera la chiave.
+4. **Diluizione per le righe della Qualità:** campo nuovo `azioni_oltre_25_1a` nella Qualità e `diluizione_oltre_soglia` nella lista. Prima la colonna Sicurezza era piena di "⚠ manca diluizione".
+5. **Crediti della Qualità:** rinnovi sparsi sui cinque giorni feriali, circa 1.200 crediti a notte invece di circa 5.800 in una notte a settimana (con il primo filtro della seconda revisione: 1.400-1.800). Differenze della Crescita dal backtest scritte nel paragrafo 1.
+
+### Correzioni dopo la seconda revisione
+
+Già comprese nei paragrafi sopra; qui il dettaglio. Nessun campo tolto o rinominato.
+
+**1. Crescita (`results-moonshot/`): ricavi nella valuta di bilancio.**
+
+- Yahoo dà i ricavi (`totalRevenue`) nella valuta di bilancio (`financialCurrency`), non in quella di quotazione. Prima del cambio la soglia dei 100 M$ di ricavi era calcolata con la valuta di quotazione.
+- `garp_screener.CACHE_KEYS` ha la chiave nuova `financialCurrency`, in coda: la cache `.info` (`partials/info-*.json`) la contiene e la **fotografia `snapshots/universo/*.csv.gz` ha una colonna nuova `financialCurrency`, in coda**. Le altre colonne non cambiano.
+- Campi nuovi su ogni titolo: `financial_currency` e `revenue_ttm_usd` (tabella del paragrafo 1). `checks.revenue_scale_ok` usa `revenue_ttm_usd`.
+- Se `financialCurrency` manca si usa `currency`, come prima. Se c'è ma non è nella tabella dei cambi (`FX_USD`), `revenue_ttm_usd` è `null` e il titolo non passa la soglia dei ricavi; fra i 143 candidati non americani controllati il 07/11 non capita mai.
+- Prova del 07/11 con i dati Yahoo veri (nessun credito EODHD):
+  - **TROAX.ST**: 314 M€ di ricavi; prima 30 M$ (convertiti come corone, sotto soglia), ora 339 M$. Resta fuori per il debito (`debt_ok`), non più per i ricavi.
+  - **ATAT** (ADR, bilancio in yuan): 11,7 Mld CNY; prima "11,7 Mld$", ora 1,64 Mld$. Passa come prima.
+  - **RNW** (ADR, bilancio in rupie): 148 Mld INR; prima "148 Mld$", ora 1,78 Mld$.
+  - **TSM** (ADR, bilancio in dollari di Taiwan): 4.945 Mld TWD, ora 153 Mld$.
+  - Fra i 143 titoli non americani che passano gli altri filtri principali della Crescita (dati del 06/11), 39 hanno la valuta di bilancio diversa da quella di quotazione (22 sono GBp/GBP, stesso cambio). Cambia l'esito della soglia dei ricavi per 2: TROAX.ST e IWS.OL (bilancio in euro, quotate a Stoccolma e Oslo). Nessuna ADR cambia esito, ma `revenue_ttm_usd` ora è giusto.
+
+**2. Workflow:** tempo massimo del job di merge 90 minuti (era 60). I passi con `continue-on-error` hanno il loro tempo massimo: Temi 12, Svolta 5, Qualità 20, lista 5, stime 20, in tutto 62 minuti. Con 60 il job poteva scadere prima del commit; ora restano circa 28 minuti per installazione, merge di GARP e Moonshot e commit, che di solito prendono 2-3 minuti. Qualità e stime tengono i 20 minuti del passo, con `QUALITA_TEMPO_MAX_S` e `EODHD_TEMPO_MAX_S` a 900 secondi.
+
+**3. Lista da radiografare (`results-lista/`): i 5 della settimana.**
+
+Regola nuova, in quest'ordine:
+
+1. prima i "probabile" su Trade Republic, poi gli altri (come prima);
+2. poi la priorità della lista: core GARP, poi 2 o più famiglie (più famiglie prima);
+3. **a pari priorità, il tipo**: core > Crescita media/grande > Qualità > altri (GARP top 30 non core, Radar B, Svolta) > Crescita piccola;
+4. poi il punteggio medio;
+5. **al massimo 1 titolo ad alto rischio** (Crescita piccola, `alto_rischio` = true) a settimana. Se mancano titoli senza alto rischio, `settimana` ha meno di 5 ticker.
+
+Il tipo di una riga: `core` se è core GARP; `Crescita piccola` se è ad alto rischio, anche se ha altre famiglie; `Crescita media/grande` se è nella famiglia Crescita (Radar A senza Moonshot conta qui: il radar parte da 2 Mld$); `Qualità`; altrimenti `altri`.
+L'ordine della lista e `posizione` non cambiano.
+
+Campi nuovi:
+
+| Campo | Dove | Significato |
+|---|---|---|
+| `tipo_settimana` | ogni riga di `lista` ed `esclusi_sicurezza` | Uno di `"core"`, `"Crescita media/grande"`, `"Qualità"`, `"altri"`, `"Crescita piccola"`. |
+| `settimana_max_alto_rischio` | in testa | 1. |
+| `settimana_ordine_tipi` | in testa | I cinque tipi nell'ordine di preferenza. |
+
+Cambi di significato: `regola_settimana` descrive la regola nuova; `settimana` può avere meno di 5 ticker.
+`latest.md`: sotto "Questa settimana" una riga con la regola; la nota in fondo sulla ⭐ la riassume.
+
+Prova sui file veri del 07/11 (`lista_radiografare.py` sui `latest.json` del repo; la Qualità non c'è ancora, la famiglia è ignorata con un avviso): settimana PAYS, CDNA, GLBE, APN.L, FIGS (prima PAYS, CDNA, GLBE, APN.L, RELY: a pari priorità, 2 famiglie, FIGS della Crescita passa davanti a RELY, GARP top 30 e Svolta). Quei file vengono dal codice di prima, senza fasce della Crescita: con le fasce calcolate dalla capitalizzazione (prova a parte) la regola di prima avrebbe messo 2 piccole ad alto rischio nella settimana (PAYS e APN.L), quella nuova nessuna, perché a pari priorità le medie e grandi vengono prima.
+
+**4. Qualità (`results-qualita/`): primo filtro con il margine lordo.**
+
+- Il primo filtro sul solo ROE di Yahoo (oltre il 15%) perdeva circa l'8-9% delle società Q3: quelle che passano con i margini (Q2) e hanno il ROE di Yahoo appena sotto il 15%. Ora entra anche chi ha il **margine lordo Yahoo oltre il 50%** (`grossMargins`, già nella cache; se manca vale solo il ROE).
+- `criteria`: chiave nuova `prefiltro_margine_lordo_min` (0.50); `prefiltro_roe_min` resta 0.15.
+- `primo_filtro`: chiave nuova `solo_margine_lordo` (candidati entrati solo per il margine lordo). `roe` conta ora gli scartati da questa regola, cioè con né ROE né margine lordo sopra soglia.
+- `seguiti`: per un titolo "fuori dal primo filtro" per questa regola il motivo dice anche il margine lordo (es. "ROE Yahoo 10%, non oltre 15%, margine lordo 45%, non oltre 50%").
+- `latest.md`: la riga in testa e la nota in fondo descrivono il filtro nuovo e dicono quante candidate sono entrate solo per il margine lordo.
+- Con l'universo del 06/11: candidati da 605 a 837 titoli (232 solo per il margine lordo), società da 581 a 797 (+216; 786 coperte da EODHD). Delle 216 in più, 45 non hanno ROE su Yahoo (di solito patrimonio negativo: escono comunque dalla Q3) e 53 hanno ROE negativo: costano crediti ma il filtro resta semplice.
+- Crediti (simulazione dei turni sui 5 giorni feriali, partendo da un lunedì): prima notte **7.860** (era 5.720), poi **1.400-1.810 a notte**, media circa 1.570 (era 1.010-1.300, media 1.140): circa 430 crediti in più a notte. Il tetto di 15.000 per notte resta lontano anche dopo un turno saltato (es. lunedì festivo: il mercoledì circa 2.800). Tempo: nella prova 4 società in 2 secondi; le 786 della prima notte, 4 in parallelo, sono qualche minuto, dentro i 900 secondi. Se il tempo finisce, il resto si scarica la notte dopo (prima le mai scaricate).
+- Prova con dati EODHD veri il 07/11 (40 crediti): Veeva (VEEV), Richemont (CFR.SW), Descartes (DSGX) e Birkenstock (BIRK) entrano in Q3 con Q2 (margine operativo ≥ 20% in 4 o 5 anni su 5). Degli altri due nomi della revisione, Camtek (CAMT) resta fuori per la capitalizzazione (4,3 Mld$, sotto 5) e Indutrade (INDT.ST) è già candidata per il ROE (15,7% il 06/11; margine lordo 36%).
+
+**5. Test.** I test con dati finti (fuori dal repo) sono aggiornati: colonna TR nella tabella della lista, `results-qualita/latest.json` che può mancare, settimana nuova. Il test del GARP `test_make_report_sicurezza_e_stime` fallisce già su main (b0ad9f0) ed è lasciato com'è.

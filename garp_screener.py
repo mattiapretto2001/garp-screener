@@ -97,6 +97,10 @@ CACHE_KEYS = [
     "recommendationMean", "forwardEps", "trailingEps", "enterpriseValue",
     # dal 03/11/2026: distingue azioni da fondi/ETF nei controlli di qualità
     "quoteType",
+    # dal 08/11/2026: valuta di bilancio. Ricavi, FCF, cassa e debito di Yahoo
+    # sono in questa valuta, non in quella di quotazione (currency): serve al
+    # Moonshot per convertire i ricavi in dollari (es. TROAX.ST: SEK / EUR)
+    "financialCurrency",
 ]
 
 # ----------------------------- Qualità dei dati -----------------------------
