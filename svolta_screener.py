@@ -621,6 +621,9 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
         avvisi.append(f"diluizione {dil*100:.0f}% l'anno (oltre 10%)")
     if runway is not None and runway < C["runway_years_min"]:
         avvisi.append(f"cassa per {runway:.1f} anni al consumo attuale (meno di 2)")
+    # guardia di sicurezza del GARP (08/11/2026): qui solo etichetta, non esclude
+    sic_dati = {"variazione_azioni_1a": dil, "pct_max_52s": pct_high}
+    sic_motivi = base.safety_reasons(sic_dati)
 
     checks = {
         # filtri obbligatori B1
@@ -774,6 +777,9 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
         "diluizione": dil,
         "insider_quota_acquisti": ins,
         "avvisi": avvisi,
+        "sicurezza_ok": base.safety_flag(sic_dati, sic_motivi),
+        "sicurezza_motivi": sic_motivi,
+        "sicurezza_nota": base.safety_note(sic_dati, sic_motivi),
         "tema_affollato": any(w in ind for w in CROWDED_INDUSTRY_WORDS),
         "punteggio_100": total,
         "punteggio": round(total / 10, 1),
@@ -983,6 +989,8 @@ def make_report(results, meta, started):
               + (f" (dati mancanti: {', '.join(r['dati_mancanti'])})" if r.get("dati_mancanti") else "")]
         if r.get("avvisi"):
             L.append(f"- ⚠ Avvisi: {'; '.join(r['avvisi'])}")
+        if r.get("sicurezza_ok") is False:
+            L.append(f"- ⚠ Guardia di sicurezza non superata (solo etichetta): {r.get('sicurezza_nota')}")
         L.append("")
     if len(passed) > TOP_N_MD:
         L += ["## Gli altri promossi", "",
