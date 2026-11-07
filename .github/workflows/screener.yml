@@ -175,7 +175,8 @@ jobs:
         run: python lista_radiografare.py
 
       # Fotografia delle stime degli analisti da EODHD (dal 08/11/2026): un quinto
-      # dell'universo a rotazione, solo valori derivati (licenza: repo pubblico).
+      # dell'universo a rotazione più il recupero dei titoli con la fotografia più
+      # vecchia, coi crediti che avanzano; solo valori derivati (licenza: repo pubblico).
       - name: Download universe (EODHD snapshot)
         continue-on-error: true
         uses: actions/download-artifact@v4
@@ -189,7 +190,8 @@ jobs:
           EODHD_API_TOKEN: ${{ secrets.EODHD_API_TOKEN }}
           UNIVERSE_FILE: universe.json
           EODHD_CAP_CREDITI: "25000"
-          EODHD_RESIDUO_MIN: "20000"
+          # crediti pagati ogni giorno: si lascia solo un piccolo margine (era 20000)
+          EODHD_RESIDUO_MIN: "5000"
           EODHD_TEMPO_MAX_S: "900"
         run: python snapshot_stime_eodhd.py
 

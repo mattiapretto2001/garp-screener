@@ -110,14 +110,30 @@ def num(x):
 
 
 def leggi_json(path):
+    """Report di uno screener, o None (con avviso) se manca, è rotto, vuoto
+    ('{}') o non è un dizionario."""
     try:
         with open(path, encoding="utf-8") as f:
-            return json.load(f)
+            d = json.load(f)
     except FileNotFoundError:
         return None
     except Exception as e:
         print(f"[WARN] {path} non leggibile: {e}", file=sys.stderr)
         return None
+    if not isinstance(d, dict) or not d:
+        print(f"[WARN] {path} vuoto o senza report: ignorato", file=sys.stderr)
+        return None
+    return d
+
+
+def pct_garp(r):
+    """Prezzo/massimo dal GARP o dalla Svolta: il valore verificato sullo
+    storico prezzi (`pct_max_52s_verificato`, frazionamenti) se c'è.
+    Ritorna (valore, verificato sì/no)."""
+    v = num(r.get("pct_max_52s_verificato"))
+    if v is not None:
+        return v, True
+    return num(r.get("pct_max_52s", r.get("pct_of_52w_high"))), False
 
 
 def leggi_schede_fatte(path=SCHEDE_FATTE):
@@ -156,6 +172,7 @@ class Accumulatore:
                 "punteggio_medio": None, "pct_max_52s": None, "pct_max_52s_fonte": None,
                 "diluizione": None, "diluizione_fonte": None, "stime_mancate": None,
                 "peg_sospetto": None, "sicurezza_ok": None, "sicurezza_motivi": [],
+                "sicurezza_dati_mancanti": [],
                 "gia_radiografato": False, "settimana": False, "posizione": None,
             }
         return self.righe[t]
@@ -196,6 +213,8 @@ def aggiungi_garp(acc, rep):
         if not (is_core or is_top):
             continue
         row = acc.riga(t)
+        if row is None:     # riga senza ticker: si salta, non blocca la lista
+            continue
         acc.dati(row, r.get("name"), r.get("sector"), r.get("country"), r.get("currency"),
                  r.get("market_cap"), r.get("price"))
         if is_core:
@@ -206,8 +225,9 @@ def aggiungi_garp(acc, rep):
         row["punteggio_garp"] = num(r.get("punteggio_garp"))
         row["stime_mancate"] = r.get("stime_mancate")
         row["peg_sospetto"] = r.get("peg_sospetto")
-        acc.sicurezza(row, r.get("pct_max_52s"), "GARP", r.get("variazione_azioni_1a"),
-                      "GARP, ultimo anno")
+        pm, ver = pct_garp(r)
+        acc.sicurezza(row, pm, "GARP, verificato sullo storico" if ver else "GARP",
+                      r.get("variazione_azioni_1a"), "GARP, ultimo anno")
     for chiave, segnale in (("radar_a", "Radar A"), ("radar_b", "Radar B")):
         lista = rep.get(chiave) or []
         perc = percentili_per_posizione([norm_ticker(r.get("ticker")) for r in lista])
@@ -218,8 +238,9 @@ def aggiungi_garp(acc, rep):
             acc.dati(row, r.get("name"), r.get("sector"), r.get("country"), r.get("currency"),
                      r.get("market_cap"), r.get("price"))
             acc.segnale(row, segnale, perc.get(row["ticker"]))
-            acc.sicurezza(row, r.get("pct_max_52s"), "GARP", r.get("variazione_azioni_1a"),
-                          "GARP, ultimo anno")
+            pm, ver = pct_garp(r)
+            acc.sicurezza(row, pm, "GARP, verificato sullo storico" if ver else "GARP",
+                          r.get("variazione_azioni_1a"), "GARP, ultimo anno")
 
 
 def aggiungi_moonshot(acc, rep):
@@ -248,8 +269,9 @@ def aggiungi_svolta(acc, rep):
         acc.segnale(row, "Svolta", perc.get(row["ticker"]))
         if "margine in svolta" not in row["etichette"]:
             row["etichette"].append("margine in svolta")
-        acc.sicurezza(row, r.get("pct_of_52w_high"), "Svolta", r.get("diluizione"),
-                      "Svolta, ultimo anno")
+        pm, ver = pct_garp(r)
+        acc.sicurezza(row, pm, "Svolta, verificato sullo storico" if ver else "Svolta",
+                      r.get("diluizione"), "Svolta, ultimo anno")
 
 
 def aggiungi_temi(acc, rep):
@@ -313,6 +335,12 @@ def unisci_doppie_quotazioni(righe):
     return out
 
 
+# nomi dei due dati della guardia in sicurezza_dati_mancanti: gli stessi del
+# GARP e della Svolta (qui la diluizione è nel campo "diluizione")
+DATI_SICUREZZA_IT = {"pct_max_52s": "prezzo/massimo a 52 settimane",
+                     "variazione_azioni_1a": "variazione delle azioni"}
+
+
 def valuta_sicurezza(r, soglie):
     motivi = []
     if r["diluizione"] is not None and r["diluizione"] > soglie["sicurezza_diluizione_max"]:
@@ -320,12 +348,28 @@ def valuta_sicurezza(r, soglie):
     if r["pct_max_52s"] is not None and r["pct_max_52s"] < soglie["sicurezza_pct_max52_min"]:
         motivi.append("lontano_dal_massimo")
     r["sicurezza_motivi"] = motivi
+    # dato mancante (anche uno solo dei due): non esclude, ma lo dice
+    r["sicurezza_dati_mancanti"] = [k for k, v in (("pct_max_52s", r["pct_max_52s"]),
+                                                   ("variazione_azioni_1a", r["diluizione"]))
+                                    if v is None]
     if motivi:
         r["sicurezza_ok"] = False
-    elif r["diluizione"] is None and r["pct_max_52s"] is None:
-        r["sicurezza_ok"] = None   # nessun dato: non esclude, ma lo dice
+    elif len(r["sicurezza_dati_mancanti"]) == 2:
+        r["sicurezza_ok"] = None   # nessun dato: non verificabile
     else:
         r["sicurezza_ok"] = True
+
+
+def testo_dati_mancanti(r, breve=False):
+    """'manca la variazione delle azioni' e simili; '' se non manca nulla."""
+    m = r.get("sicurezza_dati_mancanti") or []
+    if not m:
+        return ""
+    if breve:
+        return "⚠ non verificabile" if len(m) == 2 else (
+            "⚠ manca " + ("prezzo/max" if m == ["pct_max_52s"] else "diluizione"))
+    nomi = [DATI_SICUREZZA_IT.get(k, k) for k in m]
+    return ("manca " if len(nomi) == 1 else "mancano ") + " e ".join(nomi)
 
 
 def chiave_ordine(r):
@@ -423,7 +467,10 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
                          "3) punteggio_medio (media dei percentili dentro ogni famiglia).",
         "regola_sicurezza": "Esce dalla lista chi ha prezzo sotto il 40% del massimo a 52 "
                             "settimane o azioni oltre +25% in un anno (Moonshot e Temi: media "
-                            "annua pluriennale). Dato mancante: resta, con sicurezza_ok null.",
+                            "annua pluriennale). Per GARP e Svolta, sotto soglia, il massimo è "
+                            "verificato sullo storico prezzi (frazionamenti). Dato mancante: "
+                            "resta, con l'elenco in sicurezza_dati_mancanti (sicurezza_ok null "
+                            "se mancano entrambi).",
         "regola_settimana": f"I primi {N_SETTIMANA} della lista non ancora radiografati "
                             f"({SCHEDE_FATTE}).",
         "n_righe": len(lista),
@@ -447,7 +494,8 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
         return (f"**{r['ticker']}** — {(r.get('nome') or '')[:40]} · {', '.join(r['segnali'])}"
                 + (f" · {et}" if et else "")
                 + (f" · punteggio GARP {r['punteggio_garp']}" if r["punteggio_garp"] is not None else "")
-                + (" · ⚠ sicurezza non verificabile (dati mancanti)" if r["sicurezza_ok"] is None else ""))
+                + (f" · ⚠ sicurezza non verificabile: {testo_dati_mancanti(r)}"
+                   if r.get("sicurezza_dati_mancanti") else ""))
 
     L = [f"# Lista da radiografare — {oggi}", "",
          "> **Elenco di aziende da analizzare a mano (Radiografia), non da comprare.** "
@@ -465,16 +513,17 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
     per_t = {r["ticker"]: r for r in lista}
     L += [f"{i}. {riga_breve(per_t[t])}" for i, t in enumerate(settimana, 1)] or ["- nessuno"]
     L += ["", "## Lista completa", "",
-          "| # | Ticker | Nome | Segnali | Fam. | Etichette | Punt. GARP | Punt. medio | % max 52s | Cap. (Mld) | Fatto |",
-          "|---|---|---|---|---|---|---|---|---|---|---|"]
+          "| # | Ticker | Nome | Segnali | Fam. | Etichette | Punt. GARP | Punt. medio | % max 52s | Cap. (Mld) | Sicurezza | Fatto |",
+          "|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in lista:
-        L.append("| {p} | {t} | {n} | {s} | {nf} | {e} | {pg} | {pm} | {pc} | {mc} | {f} |".format(
+        L.append("| {p} | {t} | {n} | {s} | {nf} | {e} | {pg} | {pm} | {pc} | {mc} | {sic} | {f} |".format(
             p=r["posizione"], t=r["ticker"] + (" ⭐" if r["settimana"] else ""),
             n=(r.get("nome") or "")[:30], s=", ".join(r["segnali"]), nf=r["n_famiglie"],
             e="; ".join(r["etichette"]) or "—",
             pg=r["punteggio_garp"] if r["punteggio_garp"] is not None else "—",
             pm=r["punteggio_medio"] if r["punteggio_medio"] is not None else "—",
             pc=_pct(r["pct_max_52s"]), mc=_mld(r["market_cap"], r.get("valuta")),
+            sic=testo_dati_mancanti(r, breve=True) or "ok",
             f="✓" if r["gia_radiografato"] else ""))
     L += ["", f"## Esclusi per sicurezza ({len(esclusi)})", ""]
     for r in esclusi:
@@ -494,7 +543,10 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
           "2+ famiglie (più famiglie prima), poi punteggio medio (media dei percentili del titolo "
           "dentro ciascuna famiglia). Etichette: \"margine in svolta\" (Svolta), \"tema: …\" "
           "(Temi con semaforo verde o giallo). ⭐ = nei 5 della settimana. Le società quotate su più "
-          "borse con lo stesso nome sono unite in una riga (altri ticker nel JSON)."]
+          "borse con lo stesso nome sono unite in una riga (altri ticker nel JSON). Colonna "
+          "Sicurezza: \"ok\" = guardia superata; \"⚠ manca …\" o \"⚠ non verificabile\" = "
+          "manca un dato della guardia (o tutti e due), il titolo resta in lista ma va "
+          "controllato a mano."]
     with open(os.path.join(out_dir, "latest.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(L) + "\n")
     return report

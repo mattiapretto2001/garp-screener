@@ -7,16 +7,19 @@ Earnings::History) di un QUINTO dell'universo, a rotazione: ogni titolo ha un
 gruppo fisso (0-4) e il gruppo del giorno è il giorno della settimana (lun = 0,
 ven = 4), quindi ogni titolo è aggiornato una volta a settimana. In più, ogni
 notte, i titoli "prioritari" (watchlist, schede fatte, promossi GARP, lista da
-radiografare) se STIME_PRIORITARI non vale 0.
+radiografare) se STIME_PRIORITARI non vale 0. Con i crediti che avanzano
+(fino al tetto) si recuperano gli altri titoli, prima quelli con la fotografia
+più vecchia o mai fatta (STIME_RECUPERO=0 lo spegne).
 
 LICENZA: il repository è pubblico e il piano personale EODHD non permette di
-ridistribuire i dati grezzi. Il file salva SOLO valori derivati calcolati qui:
+ridistribuire i dati grezzi. Il file salva valori derivati calcolati qui:
   - revisione della stima EPS dell'anno in corso (0y) e del prossimo (+1y) a
     7, 30 e 90 giorni, in %;
   - trimestrali sopra / sotto le stime fra le ultime 4 e segno dell'ultima
     sorpresa;
   - crescita EPS attesa in % (stima anno prossimo su stima anno in corso);
-  - numero di analisti;
+più due informazioni copiate tali e quali, che non sono stime né importi:
+  - numero di analisti (earningsEstimateNumberOfAnalysts di EODHD);
   - date dell'ultima e della prossima trimestrale (fatti pubblici).
 Nessuna stima, nessun EPS, nessun importo EODHD finisce nel file.
 
@@ -26,7 +29,8 @@ Crediti: 10 per titolo (anche se il titolo non esiste). Tetto per notte
 EODHD_CAP_CREDITI (default 25.000); tempo massimo EODHD_TEMPO_MAX_S (900 s).
 Prima di partire, e ogni 200 titoli, legge il contatore /api/user: si ferma
 se i crediti rimasti nel giorno scendono sotto EODHD_RESIDUO_MIN (default
-20.000), per lasciare margine al lavoro manuale.
+5.000 dal 08/11/2026, era 20.000: i crediti sono pagati ogni giorno e vanno
+usati; resta un piccolo margine per il lavoro manuale della sera).
 
 Chiave: su GitHub Actions è nel secret EODHD_API_TOKEN e va nel parametro
 api_token. Se la variabile non c'è (sessioni in cui un proxy aggiunge la
@@ -63,6 +67,11 @@ OUT_DIR = os.path.join("snapshots", "stime")
 FILTRO = "Earnings::Trend,Earnings::History"
 CONTROLLO_OGNI = 200          # titoli fra un controllo del contatore e l'altro
 TIMEOUT_HTTP = 30
+RESIDUO_MIN_DEFAULT = 5000    # crediti da lasciare per il lavoro manuale (era 20.000)
+PAUSA_429_MAX = 60            # secondi al massimo di pausa comune dopo un 429
+STORICO_FILE_MAX = 40         # fotografie passate lette per il recupero (circa 8 settimane)
+# esiti che contano come "fotografia fatta" per il recupero (gli errori no)
+ESITI_FATTI = {"ok", "senza_stime", "non_trovato"}
 
 # suffisso Yahoo -> borsa EODHD ("" = USA)
 BORSE = {
@@ -83,6 +92,8 @@ CAMPI = [
     "crescita_eps_attesa_pct", "trend_0y_coerente",
     "n_trimestri_4t", "n_beat_4t", "n_miss_4t", "segno_ultima_sorpresa",
     "ultima_trimestrale", "prossima_trimestrale", "fine_anno_0y",
+    # 08/11/2026: titolo di un altro gruppo scaricato con i crediti avanzati
+    "recupero",
 ]
 
 
@@ -221,6 +232,22 @@ class Contatore:
         self.chiamate = 0
         self.stop = None          # motivo dell'interruzione
         self.ultimo_controllo = 0
+        self.pausa_fino = 0.0     # pausa comune a tutti i thread dopo un 429
+        self.n_429 = 0
+
+    def rallenta(self, secondi):
+        """Dopo un 429 tutti i thread aspettano (non solo quello che l'ha preso)."""
+        with self.lock:
+            self.n_429 += 1
+            self.pausa_fino = max(self.pausa_fino, time.time() + min(secondi, PAUSA_429_MAX))
+
+    def attendi(self):
+        while True:
+            with self.lock:
+                resta = self.pausa_fino - time.time()
+            if resta <= 0:
+                return
+            time.sleep(min(resta, 5))
 
     def residuo(self):
         """(crediti rimasti oggi, risposta di /api/user) o (None, None)."""
@@ -256,8 +283,11 @@ class Contatore:
 
 
 def scarica(sessione, codice, contatore, tentativi=3):
-    """JSON delle sezioni Earnings del titolo. Ritorna (dati o None, esito)."""
+    """JSON delle sezioni Earnings del titolo. Ritorna (dati o None, esito).
+    Se tutti i tentativi finiscono con 429 l'esito è "limite_frequenza"."""
+    esito = "errore_rete"
     for i in range(tentativi):
+        contatore.attendi()
         if not contatore.prenota():
             return None, "non_scaricato"
         try:
@@ -265,6 +295,7 @@ def scarica(sessione, codice, contatore, tentativi=3):
                              params={"fmt": "json", "filter": FILTRO, **token_params()},
                              timeout=TIMEOUT_HTTP)
         except requests.RequestException:
+            esito = "errore_rete"
             time.sleep(2 * (i + 1))
             continue
         if r.status_code == 200:
@@ -279,10 +310,17 @@ def scarica(sessione, codice, contatore, tentativi=3):
                 contatore.stop = contatore.stop or f"EODHD ha risposto {r.status_code} (chiave o limite)"
             return None, f"http_{r.status_code}"
         if r.status_code == 429:
-            time.sleep(10 * (i + 1))
+            esito = "limite_frequenza"
+            attesa = 10 * (i + 1)
+            try:
+                attesa = max(attesa, int(float(r.headers.get("Retry-After") or 0)))
+            except (TypeError, ValueError):
+                pass
+            contatore.rallenta(attesa)
             continue
+        esito = "errore_rete"
         time.sleep(2 * (i + 1))
-    return None, "errore_rete"
+    return None, esito
 
 
 # ----------------------------- valori derivati -----------------------------
@@ -347,8 +385,30 @@ def derivati(dati, oggi=None):
 # ----------------------------- main -----------------------------
 
 
+def ultime_fotografie(out_dir, oggi, max_file=STORICO_FILE_MAX):
+    """{ticker: data dell'ultima fotografia fatta} dai file passati (non quello
+    di oggi), solo con esito in ESITI_FATTI: un errore non conta come fatta."""
+    out = {}
+    files = sorted(p for p in glob.glob(os.path.join(out_dir, "*.csv.gz"))
+                   if os.path.basename(p)[:10] < oggi.isoformat())[-max_file:]
+    for p in files:
+        d = os.path.basename(p)[:10]
+        try:
+            with gzip.open(p, "rt", encoding="utf-8", newline="") as fh:
+                for r in csv.DictReader(fh):
+                    t = r.get("ticker")
+                    if t and r.get("esito") in ESITI_FATTI and d > out.get(t, ""):
+                        out[t] = d
+        except Exception as e:   # un file rotto non blocca il recupero
+            print(f"[WARN] {p} non leggibile: {e}", file=sys.stderr)
+    return out
+
+
 def scegli_titoli(args, oggi):
-    """(lista di (ticker, codice, gruppo, prioritario), saltati per borsa, info)."""
+    """(lista di (ticker, codice, gruppo, prioritario, recupero), saltati per
+    borsa, info). Ordine: prioritari, gruppo del giorno per capitalizzazione
+    decrescente, poi il recupero degli altri gruppi (fotografia più vecchia o
+    mai fatta prima, poi capitalizzazione): si fermano tetto, residuo o tempo."""
     if args.tickers:
         universo = [t.strip() for t in args.tickers.split(",") if t.strip()]
         fonte, gruppo, prio = "--tickers", None, set(universo)
@@ -357,23 +417,33 @@ def scegli_titoli(args, oggi):
         gruppo = gruppo_del_giorno(oggi) if args.gruppo is None else args.gruppo
         prio = prioritari() if os.environ.get("STIME_PRIORITARI", "1") != "0" else set()
         universo = sorted(set(universo) | prio)
+    recupero_attivo = (gruppo is not None and not args.tickers
+                       and os.environ.get("STIME_RECUPERO", "1") != "0")
     caps = capitalizzazioni_usd()
-    saltati, scelti = {}, []
+    saltati, scelti, recupero = {}, [], []
     for t in universo:
         codice, suf = codice_eodhd(t)
         g = gruppo_di(t)
-        if gruppo is not None and g != gruppo and t not in prio:
+        fuori_gruppo = gruppo is not None and g != gruppo and t not in prio
+        if fuori_gruppo and not recupero_attivo:
             continue
         if codice is None:
-            saltati[suf] = saltati.get(suf, 0) + 1
+            if not fuori_gruppo:
+                saltati[suf] = saltati.get(suf, 0) + 1
             continue
-        scelti.append((t, codice, g, t in prio))
+        (recupero if fuori_gruppo else scelti).append((t, codice, g, t in prio, fuori_gruppo))
     # prima i prioritari, poi per capitalizzazione decrescente
     scelti.sort(key=lambda x: (not x[3], -(caps.get(x[0]) or 0), x[0]))
+    ultime = ultime_fotografie(args.out_dir, oggi) if recupero else {}
+    recupero.sort(key=lambda x: (ultime.get(x[0], ""), -(caps.get(x[0]) or 0), x[0]))
+    scelti += recupero
     if args.limite:
         scelti = scelti[:args.limite]
     return scelti, saltati, {"fonte_universo": fonte, "universo": len(universo),
-                             "gruppo_del_giorno": gruppo, "prioritari": len(prio)}
+                             "gruppo_del_giorno": gruppo, "prioritari": len(prio),
+                             "recupero_in_coda": len(recupero),
+                             "recupero_mai_fotografati": sum(1 for x in recupero
+                                                             if x[0] not in ultime)}
 
 
 def main(argv=None):
@@ -387,7 +457,7 @@ def main(argv=None):
 
     oggi = date.today()
     cap = env_int("EODHD_CAP_CREDITI", 25000)
-    residuo_min = env_int("EODHD_RESIDUO_MIN", 20000)
+    residuo_min = env_int("EODHD_RESIDUO_MIN", RESIDUO_MIN_DEFAULT)
     tempo_max = env_int("EODHD_TEMPO_MAX_S", 900)   # il job di merge ha un tempo limite
     s = requests.Session()
     s.headers["User-Agent"] = "garp-screener/1.0 (snapshot stime)"
@@ -395,12 +465,15 @@ def main(argv=None):
     scelti, saltati, info = scegli_titoli(args, oggi)
     cont = Contatore(cap, residuo_min, s, tempo_max)
     prima, d_prima = cont.residuo()
-    riepilogo = {"date": oggi.isoformat(), **info, "da_scaricare": len(scelti),
+    # da_scaricare = gruppo del giorno + prioritari (il recupero è in recupero_in_coda)
+    riepilogo = {"date": oggi.isoformat(), **info,
+                 "da_scaricare": sum(1 for x in scelti if not x[4]),
                  "saltati_per_borsa": dict(sorted(saltati.items())),
                  "saltati_totale": sum(saltati.values()), "cap_crediti": cap,
                  "residuo_min": residuo_min, "crediti_rimasti_prima": prima}
-    print(f"Stime EODHD: {len(scelti)} titoli da scaricare (gruppo {info['gruppo_del_giorno']}, "
-          f"prioritari {info['prioritari']}), saltati per borsa {riepilogo['saltati_totale']} "
+    print(f"Stime EODHD: {len(scelti)} titoli in coda (gruppo {info['gruppo_del_giorno']}, "
+          f"prioritari {info['prioritari']}, recupero {info['recupero_in_coda']}), "
+          f"saltati per borsa {riepilogo['saltati_totale']} "
           f"{riepilogo['saltati_per_borsa']}; crediti rimasti oggi: {prima}")
     if prima is None:
         if d_prima is None and not token_params():
@@ -428,20 +501,38 @@ def main(argv=None):
                     righe[r["ticker"]] = r
     da_fare = [x for x in scelti if x[0] not in righe]
 
-    def lavoro(x):
-        t, codice, g, pr = x
-        dati, esito = scarica(s, codice, cont)
-        r = derivati(dati, oggi) if dati is not None else {k: None for k in CAMPI}
-        if esito == "ok" and r["n_analisti"] is None and r["n_trimestri_4t"] is None:
-            esito = "senza_stime"
+    def vuota(x, esito):
+        t, codice, g, pr, rec = x
+        r = {k: None for k in CAMPI}
         r.update(date=oggi.isoformat(), ticker=t, codice_eodhd=codice, gruppo=g,
-                 prioritario=pr, esito=esito)
+                 prioritario=pr, esito=esito, recupero=rec)
+        return r
+
+    def lavoro(x):
+        dati, esito = scarica(s, x[1], cont)
+        r = vuota(x, esito)
+        if dati is not None:
+            # un record EODHD di forma inattesa non deve far perdere il file della notte
+            try:
+                r.update({k: v for k, v in derivati(dati, oggi).items() if v is not None})
+            except Exception as e:
+                print(f"[WARN] {x[0]}: dati EODHD non validi ({type(e).__name__})",
+                      file=sys.stderr)
+                return vuota(x, "dati_non_validi")
+        if esito == "ok" and r["n_analisti"] is None and r["n_trimestri_4t"] is None:
+            r["esito"] = "senza_stime"
         return r
 
     esiti = {}
     with ThreadPoolExecutor(max_workers=max(1, args.workers)) as ex:
-        for fut in as_completed([ex.submit(lavoro, x) for x in da_fare]):
-            r = fut.result()
+        futs = {ex.submit(lavoro, x): x for x in da_fare}
+        for fut in as_completed(futs):
+            try:
+                r = fut.result()
+            except Exception as e:   # per sicurezza: un titolo non blocca gli altri
+                print(f"[WARN] {futs[fut][0]}: errore interno ({type(e).__name__})",
+                      file=sys.stderr)
+                r = vuota(futs[fut], "errore_interno")
             esiti[r["esito"]] = esiti.get(r["esito"], 0) + 1
             if r["esito"] != "non_scaricato":
                 righe[r["ticker"]] = r
@@ -457,6 +548,10 @@ def main(argv=None):
 
     dopo, _ = cont.residuo()
     riepilogo.update({"esiti": dict(sorted(esiti.items())), "righe_nel_file": len(righe),
+                      "recupero_scaricati": sum(1 for r in righe.values()
+                                                if str(r.get("recupero")) == "True"
+                                                and r.get("esito") in ESITI_FATTI),
+                      "risposte_429": cont.n_429,
                       "chiamate": cont.chiamate, "crediti_stimati": cont.chiamate * CREDITI_PER_TITOLO,
                       "crediti_rimasti_dopo": dopo,
                       "crediti_usati": (prima - dopo) if dopo is not None else None,

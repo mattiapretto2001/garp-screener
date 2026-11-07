@@ -223,10 +223,17 @@ Nessun campo esistente è stato tolto o rinominato.
 **Regola.** Un titolo esce da `passed`, da `radar_a` e da `radar_b` se:
 
 - le azioni in circolazione sono cresciute di **oltre il 25% in un anno** (`variazione_azioni_1a`), oppure
-- il prezzo è **sotto il 40% del massimo a 52 settimane** (`pct_max_52s`).
+- il prezzo è **sotto il 40% del massimo a 52 settimane** (`pct_max_52s_verificato` se c'è, altrimenti `pct_max_52s`).
 
-Un dato mancante non esclude.
-Gli esclusi non spariscono: finiscono nella lista nuova `esclusi_sicurezza`, con il motivo.
+**Frazionamenti.** Il massimo a 52 settimane di Yahoo (`fiftyTwoWeekHigh`) dopo un frazionamento delle azioni resta per mesi sul prezzo vecchio.
+Esempio: FCIT.L (frazionamento 4:1 l'11/05/2026) ha massimo 1.351 contro 356 reale, quindi 24% invece di 92%; lo stesso per CGT.L (10:1) e BRSC.L (5:1).
+Per questo, prima di escludere un candidato (promosso, radar A o radar B) sotto il 40%, lo screener ricalcola il rapporto sullo storico prezzi di un anno, che è rettificato per i frazionamenti (una chiamata a Yahoo in più, solo per questi pochi titoli).
+Il risultato va nel campo nuovo `pct_max_52s_verificato`; `pct_max_52s` resta il valore di prima.
+Se lo storico non c'è, vale `pct_max_52s` e la nota lo dice.
+Un crollo vero (es. WGS) resta escluso: lo storico conferma il massimo.
+
+Un dato mancante non esclude, ma viene segnalato: `sicurezza_dati_mancanti` dice quale dato manca (anche uno solo dei due).
+Gli esclusi non spariscono: finiscono nella lista nuova `esclusi_sicurezza`, con il motivo, **una riga per titolo** anche se esce da più liste.
 
 **Stime mancate.** Se almeno 3 delle ultime 4 trimestrali sono sotto le stime degli analisti, il titolo **resta in `passed`** ma **non può essere in `top30` né in `core`**.
 Il posto in top 30 passa al titolo successivo per punteggio.
@@ -246,15 +253,19 @@ Il posto in top 30 passa al titolo successivo per punteggio.
 | `esclusi_sicurezza` | I titoli tolti, con tutti i loro campi più quelli sotto. |
 | `regola_stime_mancate` | La regola delle stime mancate, in italiano. |
 | `con_stime_mancate_count`, `con_stime_mancate` | Quanti e quali promossi hanno `stime_mancate` = true. |
+| `sicurezza_non_verificabile_count`, `sicurezza_non_verificabile` | Quanti e quali titoli di `passed`, `radar_a` e `radar_b` hanno almeno un dato della guardia mancante (ticker, una volta sola). Restano in lista. |
 
 #### Campi nuovi sui titoli
 
 | Campo | Dove | Significato |
 |---|---|---|
-| `sicurezza_ok` | `passed`, `radar_a`, `radar_b`, `esclusi_sicurezza` | `true` = guardia superata; `false` = escluso; `null` = mancano sia prezzo/massimo sia diluizione (non verificabile, resta in lista). |
+| `sicurezza_ok` | `passed`, `radar_a`, `radar_b`, `esclusi_sicurezza` | `true` = guardia superata con i dati che ci sono (se ne manca uno lo dice `sicurezza_dati_mancanti`); `false` = escluso; `null` = mancano sia prezzo/massimo sia diluizione (non verificabile, resta in lista). |
 | `sicurezza_motivi` | stessi | Lista di motivi: `"diluizione"`, `"lontano_dal_massimo"`. Vuota se nessuno. |
-| `sicurezza_nota` | `esclusi_sicurezza` | Il motivo in italiano, con i numeri (es. "prezzo al 34% del massimo a 52 settimane (soglia 40%)"). |
-| `lista_origine` | `esclusi_sicurezza` | Da quale lista è uscito: `"garp"`, `"radar_a"` o `"radar_b"`. |
+| `sicurezza_dati_mancanti` | stessi | Dati della guardia che mancano: lista con `"pct_max_52s"` (prezzo/massimo a 52 settimane) e/o `"variazione_azioni_1a"` (variazione delle azioni). Vuota se ci sono tutti e due. Il titolo non viene escluso per questo. |
+| `sicurezza_nota` | `esclusi_sicurezza` | Il motivo in italiano, con i numeri (es. "prezzo al 34% del massimo a 52 settimane (soglia 40%, verificato sullo storico prezzi)"). |
+| `lista_origine` | `esclusi_sicurezza` | Da quale lista è uscito: `"garp"`, `"radar_a"` o `"radar_b"`. Se esce da più liste (radar A e radar B insieme) è la prima, nell'ordine garp, radar_a, radar_b. |
+| `liste_origine` | `esclusi_sicurezza` | Tutte le liste da cui è uscito, es. `["radar_a", "radar_b"]`. |
+| `pct_max_52s_verificato` | ogni risultato del GARP (`passed`, `near_miss`, radar, esclusi) | Prezzo/massimo a 52 settimane ricalcolato sullo storico prezzi di un anno (rettificato per i frazionamenti). Calcolato solo per i candidati (promossi, radar A, radar B) con `pct_max_52s` sotto 0.40; `null` negli altri casi o se lo storico non c'è. |
 | `esclusa_sicurezza` | `esclusi_sicurezza` | Sempre `true`. |
 | `stime_mancate` | `passed` | `true` se almeno 3 delle ultime 4 trimestrali sono sotto le stime. |
 | `stime_mancate_4t` | `passed` (e `esclusi_sicurezza` del GARP) | Quante delle ultime 4 trimestrali sono sotto le stime (utile effettivo meno stima; una perdita minore del previsto conta come battuta). `null` se Yahoo non ha lo storico. |
@@ -266,17 +277,19 @@ Il posto in top 30 passa al titolo successivo per punteggio.
 1. **`passed` e `passed_count` escludono gli esclusi per sicurezza.** Nei titoli esclusi `passed` vale `false`.
 2. **`radar_a` e `radar_b` escludono gli esclusi per sicurezza.** Il radar A aveva già il tetto di diluizione al 10%: lì conta solo il prezzo.
 3. **`top30` e `core`** non contengono più i titoli con `stime_mancate` = true.
+   Per la soglia del core (prezzo ≥ 80% del massimo) si usa `pct_max_52s_verificato` quando c'è, altrimenti `pct_max_52s` come prima.
 4. **Il primo giorno** gli esclusi compaiono anche in `dropped_since_yesterday`: sono usciti per la guardia, non per i filtri GARP.
    Con i prezzi del 06/11 la guardia avrebbe tolto circa 12 promossi su 144, tutti per il prezzo: SNDK, WDC, CRDO, ALAB, RDDT, ALNY, STRL, AGX, IESC, RSI, INOD, POWL.
 5. **`near_miss`** non cambia. Un candidato al radar B escluso resta nei `near_miss`, con `sicurezza_ok` = false.
+6. **`esclusi_sicurezza_count`** conta ogni titolo una volta sola: un titolo che è sia in radar A sia in radar B ed esce dalla guardia compare in una riga, con `liste_origine` = `["radar_a", "radar_b"]`.
 
 #### `latest.md` (GARP)
 
-Due sezioni nuove in fondo: "Esclusi per sicurezza" (con il motivo) e "Stime mancate".
+Tre sezioni nuove in fondo: "Esclusi per sicurezza" (con il motivo e la lista d'origine, es. "da Radar A e Radar B"), "Sicurezza non verificabile" (titoli rimasti in lista con un dato della guardia mancante, e quale) e "Stime mancate".
 
 #### `snapshots/garp/*.csv` e `snapshots/moonshot/*.csv`
 
-- Quattro colonne nuove in coda: `sicurezza_ok`, `stime_mancate`, `stime_mancate_4t`, `variazione_azioni_1a`.
+- Cinque colonne nuove in coda: `sicurezza_ok`, `stime_mancate`, `stime_mancate_4t`, `variazione_azioni_1a`, `pct_max_52s_verificato`.
 - Nel GARP ci sono anche le righe degli esclusi, con `stato` = `"esclusa_sicurezza"`.
 - Nel Moonshot è valorizzata solo `stime_mancate_4t`; le altre restano vuote.
 
@@ -294,9 +307,12 @@ Due sezioni nuove in fondo: "Esclusi per sicurezza" (con il motivo) e "Stime man
 | `sicurezza_ok` | ogni titolo | Stessa guardia del GARP (diluizione dell'ultimo anno, prezzo/massimo): `true`, `false` o `null`. |
 | `sicurezza_motivi` | ogni titolo | `"diluizione"`, `"lontano_dal_massimo"`. |
 | `sicurezza_nota` | ogni titolo | Il motivo in italiano, vuoto se non ce n'è. |
+| `sicurezza_dati_mancanti` | ogni titolo | Come nel GARP: `"pct_max_52s"` e/o `"variazione_azioni_1a"` se mancano (qui la diluizione è il campo `diluizione`). |
+| `pct_max_52s_verificato` | ogni titolo | Come nel GARP: per i promossi sotto il 40% del massimo, prezzo/massimo ricalcolato sullo storico prezzi (frazionamenti); `null` negli altri casi. L'etichetta usa questo valore quando c'è. |
 
 `passed`, `hard_checks`, `checks` e punteggio non cambiano.
-In `latest.md`, sotto i titoli che non superano la guardia, c'è la riga "⚠ Guardia di sicurezza non superata (solo etichetta)".
+In `latest.md`, sotto i titoli che non superano la guardia, c'è la riga "⚠ Guardia di sicurezza non superata (solo etichetta)"; se manca un dato, la riga "⚠ Sicurezza non verificabile: manca …".
+Nella tabella "Gli altri promossi" gli stessi avvisi sono nella colonna Avvisi.
 
 ### 3. Lista unica da radiografare (`results-lista/`, nuova cartella)
 
@@ -316,6 +332,8 @@ Una riga per società: i ticker sono normalizzati (maiuscole; `BRK.B` diventa `B
 
 **Guardia di sicurezza, uguale per tutti.** Esce dalla lista chi ha prezzo sotto il 40% del massimo o azioni oltre +25% in un anno.
 Per Moonshot e Temi la diluizione disponibile è la media annua su più anni.
+Per GARP e Svolta si usa `pct_max_52s_verificato` quando c'è (frazionamenti, vedi sopra).
+Un dato mancante non esclude: lo dice `sicurezza_dati_mancanti` e, in `latest.md`, la colonna Sicurezza.
 Gli esclusi vanno in `esclusi_sicurezza`.
 Con i file del 07/11 sarebbero usciti ALGM (Svolta) e CRDO (top 30 GARP), entrambi con il prezzo al 39% del massimo.
 
@@ -334,7 +352,7 @@ Va aggiornato dopo ogni Radiografia (non fa partire lo screening).
 |---|---|
 | `screener`, `date`, `generated_at_utc` | Come negli altri report; `screener` = `"lista_radiografare"`. |
 | `fonti` | Per ogni screener: `file`, `letto` (true/false), `date` del suo report. |
-| `avvisi` | Fonte mancante o fonti con date diverse. |
+| `avvisi` | Fonte mancante, illeggibile o vuota (un file che contiene solo `{}` conta come mancante) o fonti con date diverse. |
 | `famiglie` | `["GARP", "Radar A", "Radar B", "Moonshot", "Svolta"]`. |
 | `regola_famiglie`, `regola_ordine`, `regola_sicurezza`, `regola_settimana` | Le regole, in italiano. |
 | `n_righe`, `n_2_famiglie`, `n_core` | Quanti titoli in lista, quanti in 2+ famiglie, quanti core. |
@@ -359,15 +377,19 @@ Va aggiornato dopo ogni Radiografia (non fa partire lo screening).
 | `punteggio_garp` | Dal GARP, se c'è. |
 | `punteggi` | Percentile 0-100 del titolo dentro ciascuna sua famiglia (dalla posizione nella lista di quello screener). |
 | `punteggio_medio` | Media di `punteggi`: serve solo a ordinare. |
-| `pct_max_52s`, `pct_max_52s_fonte` | Prezzo/massimo a 52 settimane e da quale screener viene. |
+| `pct_max_52s`, `pct_max_52s_fonte` | Prezzo/massimo a 52 settimane e da quale screener viene ("GARP", "GARP, verificato sullo storico", "Svolta", "Svolta, verificato sullo storico", "Moonshot", "Temi"). |
 | `diluizione`, `diluizione_fonte` | Variazione delle azioni usata per la guardia e da dove viene ("GARP, ultimo anno", "Svolta, ultimo anno", "Moonshot, media annua pluriennale", "Temi, media annua pluriennale"). |
 | `stime_mancate`, `peg_sospetto` | Dal GARP, se c'è. |
 | `sicurezza_ok`, `sicurezza_motivi` | Esito della guardia (`null` = nessun dato). |
+| `sicurezza_dati_mancanti` | Dati della guardia che mancano: `"pct_max_52s"` e/o `"variazione_azioni_1a"` (stessi nomi del GARP; qui la diluizione è il campo `diluizione`). Vuota se ci sono tutti e due. |
 | `gia_radiografato` | `true` se il ticker (o un altro ticker della stessa società) è in `schede_fatte.txt`. |
 | `settimana` | `true` per i 5 della settimana. |
 | `posizione` | Posizione nella lista (1 = primo). |
 
 `latest.md`: i 5 della settimana, la tabella completa (⭐ = settimana, ✓ = già radiografato) e gli esclusi per sicurezza.
+La tabella completa ha la colonna nuova **Sicurezza** (prima di "Fatto"): "ok", "⚠ manca prezzo/max", "⚠ manca diluizione" o "⚠ non verificabile" (mancano tutti e due).
+Nei 5 della settimana l'avviso "⚠ sicurezza non verificabile: manca …" compare anche quando manca un solo dato.
+Una riga core o top 30 senza ticker viene saltata (prima faceva fallire lo script).
 
 ### 4. Fotografie notturne nuove
 
@@ -376,7 +398,7 @@ Va aggiornato dopo ogni Radiografia (non fa partire lo screening).
 Ogni sera, una riga per **ogni titolo analizzato dal GARP senza errore** (circa 10.000; circa 100 KB compressi).
 Solo valori derivati, nessun dato grezzo: servono a verificare in futuro punteggio e guardia sui dati di allora.
 
-Colonne: `date`, `ticker`, `stato` (`passed`, `esclusa_sicurezza`, `near_miss`, `bocciato`), `punteggio_garp`, `core`, `top30`, `radar_a`, `radar_b`, `fascia_peg`, `peg_sospetto`, `stime_mancate`, `stime_mancate_4t`, `sorprese_4t_n`, `riacquisti_netti`, `sicurezza_ok` (vuoto = nessun dato), `sicurezza_motivi`, `pct_max_52s`, `variazione_azioni_1a`, `n_check_falliti`, `check_falliti` (separati da virgola).
+Colonne: `date`, `ticker`, `stato` (`passed`, `esclusa_sicurezza`, `near_miss`, `bocciato`), `punteggio_garp`, `core`, `top30`, `radar_a`, `radar_b`, `fascia_peg`, `peg_sospetto`, `stime_mancate`, `stime_mancate_4t`, `sorprese_4t_n`, `riacquisti_netti`, `sicurezza_ok` (vuoto = nessun dato), `sicurezza_motivi`, `pct_max_52s`, `variazione_azioni_1a`, `n_check_falliti`, `check_falliti` (separati da virgola), `pct_max_52s_verificato`, `sicurezza_dati_mancanti` (separati da virgola).
 
 #### `snapshots/stime/<data>.csv.gz` e `snapshots/stime/ultimo_run.json` (script `snapshot_stime_eodhd.py`)
 
@@ -384,15 +406,19 @@ Ogni notte i fondamentali EODHD (solo le sezioni sulle stime e sugli utili) di *
 Ogni titolo ha un gruppo fisso da 0 a 4; il gruppo del giorno è il giorno della settimana (lunedì = 0, venerdì = 4).
 Così ogni titolo è aggiornato una volta a settimana.
 In più, ogni notte, i titoli prioritari: watchlist, `schede_fatte.txt`, promossi e radar GARP, esclusi per sicurezza, lista da radiografare.
+**Recupero.** Con i crediti che avanzano (fino al tetto) lo script scarica anche titoli degli altri gruppi: prima quelli mai fotografati o con la fotografia più vecchia (fra le ultime 40), poi per capitalizzazione.
+Così un gruppo saltato (crediti finiti per il lavoro manuale) si recupera nei giorni dopo, invece di aspettare una settimana.
+`STIME_RECUPERO=0` lo spegne.
 
 **Licenza.** Il repository è pubblico e il piano personale EODHD non permette di ridistribuire i dati grezzi.
-Il file contiene **solo valori calcolati da noi**: nessuna stima, nessun utile per azione, nessuna sorpresa in valore.
+Il file contiene valori calcolati da noi più due informazioni copiate tali e quali, che non sono stime né importi: il numero di analisti e le date delle trimestrali (fatti pubblici).
+Nessuna stima, nessun utile per azione, nessuna sorpresa in valore.
 
 | Colonna | Significato |
 |---|---|
 | `date`, `ticker`, `codice_eodhd`, `gruppo`, `prioritario` | Data, ticker Yahoo, codice EODHD usato, gruppo di rotazione (0-4), titolo prioritario. |
-| `esito` | `ok`, `senza_stime` (nessun analista né storico), `non_trovato`, `errore_rete`, `http_<codice>`. |
-| `n_analisti` | Analisti che stimano l'utile dell'anno in corso. |
+| `esito` | `ok`, `senza_stime` (nessun analista né storico), `non_trovato`, `errore_rete`, `risposta_non_valida` (risposta non in JSON), `http_<codice>`; dal 08/11/2026 anche `limite_frequenza` (EODHD ha risposto 429 a tutti i tentativi), `dati_non_validi` (risposta con una forma inattesa: il titolo resta senza valori, gli altri vengono salvati) ed `errore_interno` (errore imprevisto su quel titolo). |
+| `n_analisti` | Analisti che stimano l'utile dell'anno in corso (numero copiato da EODHD, `earningsEstimateNumberOfAnalysts`). |
 | `rev_eps_0y_7g_pct`, `rev_eps_0y_30g_pct`, `rev_eps_0y_90g_pct` | Revisione in % della stima dell'utile per azione dell'anno in corso rispetto a 7, 30 e 90 giorni fa (sul valore assoluto: una perdita attesa che si riduce è una revisione positiva). |
 | `rev_eps_1y_7g_pct`, `rev_eps_1y_30g_pct`, `rev_eps_1y_90g_pct` | Lo stesso per l'anno prossimo. |
 | `crescita_eps_attesa_pct` | Crescita attesa in %: stima dell'anno prossimo su stima dell'anno in corso. |
@@ -401,18 +427,21 @@ Il file contiene **solo valori calcolati da noi**: nessuna stima, nessun utile p
 | `segno_ultima_sorpresa` | 1 = ultima trimestrale sopra le stime, -1 = sotto, 0 = in linea. |
 | `ultima_trimestrale`, `prossima_trimestrale` | Data dell'ultima trimestrale pubblicata e della prossima annunciata (se EODHD la conosce). |
 | `fine_anno_0y` | Fine dell'anno fiscale a cui si riferisce "anno in corso". |
+| `recupero` | `True` se il titolo è di un altro gruppo, scaricato con i crediti avanzati (vedi Recupero). |
 
 `ultimo_run.json`: riepilogo dell'ultimo run (titoli scaricati, saltati per borsa, esiti, crediti prima e dopo, eventuale interruzione).
+`da_scaricare` conta il gruppo del giorno più i prioritari. Chiavi nuove: `recupero_in_coda` (titoli di altri gruppi in coda), `recupero_mai_fotografati` (quanti di questi non hanno ancora una fotografia), `recupero_scaricati` (quanti recuperati in questo run), `risposte_429` (risposte "troppe richieste" di EODHD).
 
 **Borse.** Nessun suffisso → `.US`; `.DE` → `.XETRA`; `.L` → `.LSE`; `.KS` → `.KO`; `.AX` → `.AU`; `.PA`, `.AS`, `.MC`, `.SW`, `.ST`, `.CO`, `.HE`, `.OL`, `.BR`, `.TO`, `.TW` uguali.
 Milano, Tokyo, Hong Kong, Vienna, Lisbona e le altre sono saltate e contate in `saltati_per_borsa` (circa 300 titoli dell'universo).
 
 **Crediti.** 10 per titolo, anche se il ticker non esiste.
-Un quinto dell'universo più i prioritari sono circa 2.000-2.300 titoli, cioè 20.000-23.000 crediti a notte.
+Un quinto dell'universo più i prioritari sono circa 2.000-2.300 titoli, cioè 20.000-23.000 crediti a notte; il resto fino al tetto va al recupero.
 - Tetto per notte: `EODHD_CAP_CREDITI` (25.000).
-- Prima di partire e ogni 200 titoli lo script legge il contatore EODHD e si ferma se i crediti rimasti nel giorno scendono sotto `EODHD_RESIDUO_MIN` (20.000).
+- Prima di partire e ogni 200 titoli lo script legge il contatore EODHD e si ferma se i crediti rimasti nel giorno scendono sotto `EODHD_RESIDUO_MIN` (**5.000**; era 20.000: i crediti sono pagati ogni giorno e vanno usati, resta solo un piccolo margine per il lavoro manuale della sera).
+- Se EODHD risponde 429 (troppe richieste), tutti i thread fanno una pausa comune (al massimo 60 secondi) prima di riprovare.
 - Tempo massimo `EODHD_TEMPO_MAX_S` (900 s).
-- Prima i prioritari, poi per capitalizzazione decrescente: se i crediti non bastano restano fuori i più piccoli.
+- Prima i prioritari, poi il gruppo del giorno per capitalizzazione decrescente, poi il recupero: se i crediti non bastano restano fuori prima i titoli del recupero, poi i più piccoli del gruppo del giorno (che il recupero riprende nei giorni dopo).
 - Se il file del giorno esiste già (secondo run), i titoli già scaricati non si riscaricano.
 
 **Chiave.** Su GitHub Actions è nel secret `EODHD_API_TOKEN`. Senza secret il passo fallisce senza bloccare il commit (`ultimo_run.json` lo dice).
@@ -425,11 +454,23 @@ Un quinto dell'universo più i prioritari sono circa 2.000-2.300 titoli, cioè 2
 - Il commit aggiunge `results-lista/`; `snapshots/` era già compresa.
 - `paths-ignore`: aggiunti `results-lista/**`, `results-svolta/**` e `schede_fatte.txt`.
 - Tempo massimo del job di merge: 45 minuti (era 30).
+- `EODHD_RESIDUO_MIN` = 5000 (era 20000).
 
 ### Cosa può usare la Regia
 
 - **Proposte d'acquisto:** come prima, prima `core` e poi `top30`. Ora escludono già la guardia di sicurezza e le stime mancate.
 - **Esclusi per sicurezza:** se in `esclusi_sicurezza` (GARP o lista) compare un titolo in portafoglio o in watchlist, va segnalato con il motivo (`sicurezza_nota`). Non è un ordine di vendita automatico.
 - **Radiografie della settimana:** `results-lista/latest.json` → `settimana`. Per ogni nome mostrare `segnali`, `n_famiglie` ed `etichette`. Dopo la Radiografia aggiungere il ticker a `schede_fatte.txt`.
-- **Stime degli analisti:** `snapshots/stime/<data più recente>.csv.gz`, unendo per `ticker`. Avvisi utili: revisioni dell'anno prossimo negative a 30 e 90 giorni; `n_miss_4t` ≥ 3; `prossima_trimestrale` vicina. Il file del giorno contiene solo un quinto dell'universo più i prioritari: per gli altri usare il file più recente in cui compaiono (al massimo una settimana prima).
+- **Stime degli analisti:** `snapshots/stime/<data più recente>.csv.gz`, unendo per `ticker`. Avvisi utili: revisioni dell'anno prossimo negative a 30 e 90 giorni; `n_miss_4t` ≥ 3; `prossima_trimestrale` vicina. Il file del giorno contiene un quinto dell'universo, i prioritari e i titoli recuperati: per gli altri usare il file più recente in cui compaiono (di solito al massimo una settimana prima).
+- **Sicurezza non verificabile:** se `sicurezza_dati_mancanti` non è vuota, il titolo è rimasto in lista senza un controllo completo: verificare a mano prezzo/massimo o diluizione prima di proporlo.
 - **Svolta:** `sicurezza_ok` = false è un avviso da citare accanto al nome.
+
+### Correzioni dopo la revisione del 07/11/2026
+
+Già comprese nelle sezioni sopra; qui l'elenco, per chi aveva letto la prima versione.
+
+1. **Frazionamenti:** campo nuovo `pct_max_52s_verificato` (GARP e Svolta); la guardia, il core e la lista lo usano quando c'è. `pct_max_52s` non cambia.
+2. **Dato mancante parziale:** campo nuovo `sicurezza_dati_mancanti` (GARP, Svolta, lista); in testa al GARP `sicurezza_non_verificabile_count` e `sicurezza_non_verificabile`; sezione "Sicurezza non verificabile" nel `latest.md` del GARP, righe di avviso nella Svolta, colonna Sicurezza nella tabella completa della lista.
+3. **Doppioni negli esclusi:** una riga per titolo; campo nuovo `liste_origine`; `esclusi_sicurezza_count` conta il titolo una volta.
+4. **Lista:** una riga core o top 30 senza ticker viene saltata; un file sorgente con solo `{}` dà un avviso.
+5. **Stime EODHD:** un record di forma inattesa non fa perdere il file della notte (esito `dati_non_validi`); esito `limite_frequenza` dopo i 429 e pausa comune ai thread; riserva di crediti 5.000 invece di 20.000 e recupero dei titoli con la fotografia più vecchia; colonna nuova `recupero`.
