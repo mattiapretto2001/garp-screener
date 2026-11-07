@@ -276,7 +276,7 @@ Il posto in top 30 passa al titolo successivo per punteggio.
 
 1. **`passed` e `passed_count` escludono gli esclusi per sicurezza.** Nei titoli esclusi `passed` vale `false`.
 2. **`radar_a` e `radar_b` escludono gli esclusi per sicurezza.** Il radar A aveva già il tetto di diluizione al 10%: lì conta solo il prezzo.
-3. **`top30` e `core`** non contengono più i titoli con `stime_mancate` = true.
+3. **`top30` e `core`** includono anche i titoli con `stime_mancate` = true: l'etichetta è solo un avviso (decisione del 08/11/2026 dopo il backtest 2018-2026, dove escluderli peggiorava i risultati).
    Per la soglia del core (prezzo ≥ 80% del massimo) si usa `pct_max_52s_verificato` quando c'è, altrimenti `pct_max_52s` come prima.
 4. **Il primo giorno** gli esclusi compaiono anche in `dropped_since_yesterday`: sono usciti per la guardia, non per i filtri GARP.
    Con i prezzi del 06/11 la guardia avrebbe tolto circa 12 promossi su 144, tutti per il prezzo: SNDK, WDC, CRDO, ALAB, RDDT, ALNY, STRL, AGX, IESC, RSI, INOD, POWL.

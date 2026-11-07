@@ -1206,8 +1206,9 @@ TOP_N = 30   # nel backtest il portafoglio dei primi 30 per punteggio batte la l
 
 def add_score(passed):
     """Aggiunge a ogni promosso: fascia_peg, punteggio_garp (0-100), top30,
-    core, stime_mancate. Dal 08/11/2026 chi ha mancato le stime in almeno 3
-    delle ultime 4 trimestrali resta promosso ma non entra in top 30 né in core."""
+    core, stime_mancate. Dal 08/11/2026 "stime_mancate" è solo un'etichetta: nel
+    backtest sul periodo pulito 2018-2026 togliere questi titoli da top 30 e core
+    peggiorava i risultati (core -3,3 punti l'anno), quindi non esclude nulla."""
     for r in passed:
         peg = r.get("peg")
         r["fascia_peg"] = ("classica" if peg is not None and peg < CRITERIA["peg_classico_max"]
@@ -1226,8 +1227,7 @@ def add_score(passed):
             for k in PESI_PUNTEGGIO}
     for i, r in enumerate(passed):
         r["punteggio_garp"] = round(sum(PESI_PUNTEGGIO[k] * cols[k][i] for k in PESI_PUNTEGGIO), 1)
-    grandi = [r for r in passed if (r.get("market_cap") or 0) >= CRITERIA["core_mcap_min"]
-              and not r.get("stime_mancate")]
+    grandi = [r for r in passed if (r.get("market_cap") or 0) >= CRITERIA["core_mcap_min"]]
     for r in passed:
         r["top30"] = False
     for pos, r in enumerate(sorted(grandi, key=lambda r: -r["punteggio_garp"])):
@@ -1238,8 +1238,7 @@ def add_score(passed):
         rg = r.get("revenue_growth_qoq_yoy")
         r["core"] = bool((r.get("market_cap") or 0) >= CRITERIA["core_mcap_min"]
                          and rg is not None and rg > CRITERIA["core_ricavi_trim_min"]
-                         and pm is not None and pm >= CRITERIA["core_pct_max52_min"]
-                         and not r.get("stime_mancate"))
+                         and pm is not None and pm >= CRITERIA["core_pct_max52_min"])
 
 
 def merge_excluded(gruppi):
@@ -1353,8 +1352,9 @@ def make_report(results, universe_size, started):
         "esclusi_sicurezza_count": len(esclusi_sicurezza),
         "esclusi_sicurezza": esclusi_sicurezza,
         "regola_stime_mancate": (f"Con almeno {CRITERIA['stime_mancate_min']} delle ultime 4 "
-                                 "trimestrali sotto le stime il titolo resta in passed ma non "
-                                 "entra in top 30 né in core."),
+                                 "trimestrali sotto le stime il titolo riceve l'etichetta "
+                                 "stime_mancate: è solo un avviso, non esclude da top 30 né da core "
+                                 "(backtest 2018-2026: escluderli peggiorava i risultati)."),
         "con_stime_mancate_count": len(stime_mancate),
         "con_stime_mancate": [r["ticker"] for r in stime_mancate],
         "sicurezza_non_verificabile_count": len(non_verificabili),
@@ -1441,7 +1441,7 @@ def make_report(results, universe_size, started):
               f"{safety_missing_text(r.get('sicurezza_dati_mancanti'))}"
               for t, (r, liste) in non_verificabili.items()] or ["- nessuno"]
     lines += ["", f"## Stime mancate ({len(stime_mancate)}): almeno {CRITERIA['stime_mancate_min']} delle"
-              " ultime 4 trimestrali sotto le stime; restano promossi ma fuori da top 30 e core", ""]
+              " ultime 4 trimestrali sotto le stime; solo un avviso, restano in top 30 e core se ci rientrano", ""]
     lines += [f"- {r['ticker']} ({(r.get('name') or '')[:28]}; {r.get('stime_mancate_4t')} su "
               f"{r.get('sorprese_4t_n')}) | punteggio {r.get('punteggio_garp')}"
               for r in stime_mancate] or ["- nessuno"]

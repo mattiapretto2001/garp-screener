@@ -199,9 +199,15 @@ jobs:
         run: |
           git config user.name "garp-bot"
           git config user.email "actions@github.com"
-          git pull --rebase origin main || true
           git add results/ results-moonshot/ results-temi/ snapshots/
           git add results-svolta/ 2>/dev/null || true
           git add results-lista/ 2>/dev/null || true
           git diff --cached --quiet || git commit -m "Screening GARP+Moonshot+Temi $(date -u +%F)"
-          git push
+          # dal 08/11/2026: prima si fa il commit, poi si riallinea a main e si spinge,
+          # con 4 tentativi: se main cambia durante il job i risultati non vanno persi
+          for i in 1 2 3 4; do
+            git pull --rebase origin main && git push && exit 0
+            git rebase --abort 2>/dev/null || true
+            sleep $((i * 10))
+          done
+          echo "Push dei risultati fallito dopo 4 tentativi" && exit 1
