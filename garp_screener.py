@@ -55,7 +55,15 @@ CRITERIA = {
     "roe_min": 0.15,
     "debt_equity_max": 1.0,
     "peg_max": 2.0,                # allargato il 06/11/2026 (era 1.0): PEG 1-2 = fascia "allargata"
-    "peg_classico_max": 1.0,       # sotto questa soglia la fascia e' "classica" (il GARP storico)
+    "peg_classico_max": 1.0,
+    # 07/11/2026, dal backtest mondiale EODHD (REPORT_screener_finale_2026-11-07)
+    "peg_sospetto_sotto": 0.05,    # PEG sotto questa soglia = dato quasi sempre sbagliato: neutro nel punteggio
+    "core_mcap_min": 2e9,          # core, top 30 e radar solo da 2 Mld$ in su
+    "core_ricavi_trim_min": 0.20,  # core: ricavi del trimestre oltre +20% sull'anno prima
+    "core_pct_max52_min": 0.80,    # core: prezzo almeno all'80% del massimo a 52 settimane
+    "radar_a_ricavi_trim_min": 0.40,
+    "radar_a_cagr_min": 0.15,
+    "radar_a_azioni_max": 0.10,    # azioni in circolazione al massimo +10% in un anno       # sotto questa soglia la fascia e' "classica" (il GARP storico)
     "fcf_min": 0.0,
     "min_market_cap": 0,           # nessun filtro dimensionale: universo massimo
 }
@@ -591,7 +599,7 @@ def write_snapshot(screener, rows):
               "crescita_eps_attesa", "revisione_stime_90g", "sorpresa_utili_ultimo",
               "sorpresa_utili_media4", "fcf_yield", "score",
               "revenue_growth_qoq_yoy", "pct_of_52w_high", "criteri_nuovi",
-              "fascia_peg", "punteggio_garp", "top30"]
+              "fascia_peg", "punteggio_garp", "top30", "core", "peg_sospetto", "pct_max_52s"]
     with open(os.path.join(folder, f"{today}.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
@@ -735,7 +743,24 @@ def screen_ticker(symbol, index_name):
                                               and result["variazione_azioni_1a"] < 0)
         else:
             result["passed"] = False
+            # Radar A (iper-crescita): servono CAGR e azioni anche per chi non passa
+            if (checks["sector_ok"] and mcap is not None and mcap >= CRITERIA["core_mcap_min"]
+                    and rev_g is not None and rev_g > CRITERIA["radar_a_ricavi_trim_min"]):
+                try:
+                    inc, _ = fetch_with_retry(lambda: tk.income_stmt)
+                    if inc is not None:
+                        cagr = sales_cagr_multi_year(SimpleNamespace(income_stmt=inc))
+                        result["sales_cagr_multi_year"] = cagr
+                        dil = shares_change_1y(tk)
+                        result["variazione_azioni_1a"] = dil
+                        result["radar_a"] = (cagr is not None and cagr > CRITERIA["radar_a_cagr_min"]
+                                             and dil is not None and dil < CRITERIA["radar_a_azioni_max"])
+                except Exception:
+                    pass
 
+        high = info.get("fiftyTwoWeekHigh")
+        price = result.get("price")
+        result["pct_max_52s"] = (float(price) / float(high)) if (price and high and high > 0) else None
         return result
     except Exception as e:
         return error_result(symbol, index_name, e)
@@ -913,14 +938,29 @@ def add_score(passed):
         peg = r.get("peg")
         r["fascia_peg"] = ("classica" if peg is not None and peg < CRITERIA["peg_classico_max"]
                            else "allargata")
+        r["peg_sospetto"] = peg is not None and peg < CRITERIA["peg_sospetto_sotto"]
     if not passed:
         return
-    cols = {k: _rank_pct([r.get(k) for r in passed], higher_is_better=k not in MENO_E_MEGLIO)
+
+    def val(r, k):
+        if k == "peg" and r.get("peg_sospetto"):
+            return None   # PEG quasi zero: quasi sempre un errore di dati, conta come mediano
+        return r.get(k)
+    cols = {k: _rank_pct([val(r, k) for r in passed], higher_is_better=k not in MENO_E_MEGLIO)
             for k in PESI_PUNTEGGIO}
     for i, r in enumerate(passed):
         r["punteggio_garp"] = round(sum(PESI_PUNTEGGIO[k] * cols[k][i] for k in PESI_PUNTEGGIO), 1)
-    for pos, r in enumerate(sorted(passed, key=lambda r: -r["punteggio_garp"])):
+    grandi = [r for r in passed if (r.get("market_cap") or 0) >= CRITERIA["core_mcap_min"]]
+    for r in passed:
+        r["top30"] = False
+    for pos, r in enumerate(sorted(grandi, key=lambda r: -r["punteggio_garp"])):
         r["top30"] = pos < TOP_N
+    for r in passed:
+        pm = r.get("pct_max_52s")
+        rg = r.get("revenue_growth_qoq_yoy")
+        r["core"] = bool((r.get("market_cap") or 0) >= CRITERIA["core_mcap_min"]
+                         and rg is not None and rg > CRITERIA["core_ricavi_trim_min"]
+                         and pm is not None and pm >= CRITERIA["core_pct_max52_min"])
 
 
 def make_report(results, universe_size, started):
@@ -939,6 +979,17 @@ def make_report(results, universe_size, started):
                 r["failed_check"] = fails[0]
                 near_miss.append(r)
     near_miss = sorted(near_miss, key=lambda r: r.get("failed_check") or "")
+
+    core = [r for r in passed if r.get("core")]
+    passed_set = {r["ticker"] for r in passed}
+    radar_a = sorted([r for r in results if r.get("radar_a") and r["ticker"] not in passed_set],
+                     key=lambda r: -(r.get("revenue_growth_qoq_yoy") or 0))
+    radar_b = sorted([r for r in near_miss if r.get("failed_check") == "peg_ok"
+                      and r.get("peg") is not None and r["peg"] > 0
+                      and (r.get("market_cap") or 0) >= CRITERIA["core_mcap_min"]],
+                     key=lambda r: r["peg"])
+    for r in radar_b:
+        r["radar_b"] = True
 
     today = date.today().isoformat()
 
@@ -965,6 +1016,14 @@ def make_report(results, universe_size, started):
         "ordinamento_passed": "punteggio_garp decrescente (prima del 06/11/2026: peg crescente)",
         "pesi_punteggio": PESI_PUNTEGGIO,
         "top_n": TOP_N,
+        "top30_mcap_min": CRITERIA["core_mcap_min"],
+        "core_count": len(core),
+        "core": [r["ticker"] for r in core],
+        "radar_a_count": len(radar_a),
+        "radar_a": radar_a[:60],
+        "radar_b_count": len(radar_b),
+        "radar_b": radar_b[:60],
+        "nota_radar": "Radar A (iper-crescita) e Radar B (esclusi solo dal PEG): liste da radiografare, non da comprare.",
         "new_today": [r["ticker"] for r in new_today],
         "dropped_since_yesterday": dropped,
         "passed": passed,
@@ -1014,6 +1073,18 @@ def make_report(results, universe_size, started):
         )
     if dropped:
         lines += ["", f"Usciti dalla lista rispetto al run precedente: {', '.join(dropped)}"]
+
+    def short(r):
+        return "{t} ({n}; ricavi q/q {rg}; PEG {p})".format(
+            t=r["ticker"], n=(r.get("name") or "")[:28], rg=fmt_pct(r.get("revenue_growth_qoq_yoy")),
+            p=f"{r['peg']:.2f}" if isinstance(r.get("peg"), (int, float)) else "n/d")
+    lines += ["", f"## Core GARP ({len(core)}): ricavi del trimestre > +20%, prezzo >= 80% del massimo"
+              f" a 52 settimane, capitalizzazione >= 2 Mld$", ""]
+    lines += [f"- {short(r)} | punteggio {r.get('punteggio_garp')}" for r in core] or ["- nessuno"]
+    lines += ["", f"## Radar A, iper-crescita ({len(radar_a)}): da radiografare, non da comprare", ""]
+    lines += [f"- {short(r)}" for r in radar_a[:40]] or ["- nessuno"]
+    lines += ["", f"## Radar B, esclusi solo dal PEG ({len(radar_b)}): da radiografare, non da comprare", ""]
+    lines += [f"- {short(r)}" for r in radar_b[:40]] or ["- nessuno"]
     with open(os.path.join(RESULTS_DIR, "latest.md"), "w") as f:
         f.write("\n".join(lines) + "\n")
 

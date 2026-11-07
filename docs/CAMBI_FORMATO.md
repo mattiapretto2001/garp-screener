@@ -151,3 +151,63 @@ Le scelte vengono dal backtest `REPORT_garp_peg2_2026-11-06.md`, su OneDrive in 
 - **Le proposte dal GARP vengono dai titoli con `top30` = true.** Nel backtest il portafoglio dei primi 30 ha battuto la lista intera dal 2020, con la perdita massima più bassa. La fascia PEG 1-2 da sola rendeva meno.
 - Un titolo in fascia "allargata" richiede di verificare il PEG prospettico, come prima.
 - **`new_today` aumenta il primo giorno**, perché entrano i titoli con PEG fra 1 e 2. Non sono "nuovi" in senso stretto.
+
+## 07/11/2026: GARP core, radar e protezione dal PEG falso
+
+Le scelte vengono da `REPORT_screener_finale_2026-11-07.md` (backtest mondiale EODHD con le aziende uscite dalla Borsa), su OneDrive in Claude/_scratch/backtest_screener.
+
+### Criteri nuovi in `criteria`
+
+- `peg_sospetto_sotto`: 0.05.
+- `core_mcap_min`: 2e9.
+- `core_ricavi_trim_min`: 0.20.
+- `core_pct_max52_min`: 0.80.
+- `radar_a_ricavi_trim_min`: 0.40.
+- `radar_a_cagr_min`: 0.15.
+- `radar_a_azioni_max`: 0.10.
+
+La lista ampia `passed` **non cambia criteri**: resta il GARP con PEG < 2.
+
+### Campi nuovi su ogni titolo analizzato
+
+- `pct_max_52s`: prezzo diviso per il massimo a 52 settimane.
+
+### Campi nuovi sui titoli in `passed`
+
+- `core`: `true` se valgono tutte e tre le condizioni:
+  - capitalizzazione ≥ 2 Mld$;
+  - ricavi del trimestre oltre +20% sull'anno prima;
+  - prezzo ≥ 80% del massimo a 52 settimane.
+- `peg_sospetto`: `true` se il PEG è sotto 0,05. In quel caso il PEG conta come dato mancante, cioè come valore mediano, nel `punteggio_garp`.
+
+### Cosa cambia in `top30`
+
+- `top30` ora si calcola **solo fra i titoli con capitalizzazione ≥ 2 Mld$**. Nel backtest il GARP sotto i 2 Mld$ rendeva meno delle aziende della stessa taglia.
+
+### Campi nuovi in testa al report
+
+- `core_count` e `core`: i ticker in ordine di punteggio.
+- `radar_a_count` e `radar_a`, fino a 60 titoli. È l'**iper-crescita**, fuori dal GARP:
+  - settore ammesso;
+  - capitalizzazione ≥ 2 Mld$;
+  - ricavi del trimestre oltre +40%;
+  - CAGR dei ricavi oltre il 15%;
+  - azioni in circolazione al massimo +10% in un anno.
+  
+  Su ciascuno ci sono `radar_a`, `sales_cagr_multi_year` e `variazione_azioni_1a`.
+- `radar_b_count` e `radar_b`, fino a 60 titoli: i titoli **esclusi solo dal PEG** (PEG ≥ 2), con capitalizzazione ≥ 2 Mld$. Su ciascuno c'è `radar_b`.
+- `top30_mcap_min` e `nota_radar`.
+
+### `latest.md`
+
+- Tre sezioni nuove in fondo: "Core GARP", "Radar A" e "Radar B".
+
+### `snapshots/garp/*.csv`
+
+- Tre colonne nuove in coda: `core`, `peg_sospetto` e `pct_max_52s`.
+
+### Cosa può usare la routine
+
+- **Proposte d'acquisto:** prima i titoli `core`, poi gli altri `top30`.
+- **Radar A e Radar B:** solo candidati per le Radiografie, mai acquisti diretti.
+- **`peg_sospetto`:** se è `true`, il PEG va verificato su stockanalysis prima di citarlo.
