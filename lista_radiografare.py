@@ -4,14 +4,22 @@ Lista unificata "da radiografare" (dal 08/11/2026)
 ==================================================
 Gira nel job di merge DOPO tutti gli screener. Legge:
   - results/latest.json           (GARP: core, top 30, radar A, radar B)
-  - results-moonshot/latest.json  (Moonshot)
+  - results-moonshot/latest.json  (Moonshot = lista Crescita per fascia)
+  - results-qualita/latest.json   (Qualità durevole, dal 08/11/2026)
   - results-svolta/latest.json    (Svolta)
-  - results-temi/latest.json      (Temi: solo etichetta)
+  - results-temi/latest.json      (Temi: solo etichetta, non testati)
+  - disponibilita_tr.csv          (facoltativo: acquistabile su Trade Republic)
 e scrive results-lista/latest.json, latest.md e <data>.json.
 
 Una riga per società (ticker normalizzati; le doppie quotazioni con lo stesso
 nome sono unite). Famiglie: GARP (core o top 30 contano come UNA famiglia),
-Radar A, Radar B, Moonshot, Svolta. I Temi danno solo un'etichetta.
+Crescita (dal 08/11/2026: Radar A del GARP e Moonshot sono UNA famiglia, una
+società conta una volta anche se è in tutte e due), Qualità, Radar B, Svolta.
+I Temi danno solo un'etichetta (nessun vantaggio dimostrato).
+
+Trade Republic (dal 08/11/2026): ogni riga ha acquistabile_tr ("probabile",
+"incerto", "probabilmente no"; "n.d." se manca il file). Ticker assente dal
+file = "incerto". Fra i 5 della settimana vengono prima i "probabile".
 
 Ordine: prima il core GARP, poi i titoli in 2 o più famiglie (più famiglie
 prima), poi il punteggio medio come spareggio (percentile del titolo dentro
@@ -22,13 +30,15 @@ chi ha prezzo sotto il 40% del massimo a 52 settimane o azioni oltre +25% in
 un anno esce dalla lista e finisce in esclusi_sicurezza.
 
 "settimana": i primi 5 titoli della lista non ancora radiografati
-(schede_fatte.txt nella radice del repo, un ticker per riga).
+(schede_fatte.txt nella radice del repo, un ticker per riga), prima quelli
+"probabile" su Trade Republic, poi gli altri nell'ordine della lista.
 
 Basi dal backtest (REPORT_screener_tutti_2026-11-07): i titoli presi da 2 o
 più famiglie hanno fatto +10,2 punti l'anno sull'universo (t 2,7), quelli
 presi da una sola circa 0. Non riduce i perdenti: uno su quattro resta tale.
 """
 
+import csv
 import json
 import math
 import os
@@ -40,6 +50,7 @@ from datetime import date, datetime, timezone
 FONTI = {
     "garp": os.path.join("results", "latest.json"),
     "moonshot": os.path.join("results-moonshot", "latest.json"),
+    "qualita": os.path.join("results-qualita", "latest.json"),
     "svolta": os.path.join("results-svolta", "latest.json"),
     "temi": os.path.join("results-temi", "latest.json"),
 }
@@ -47,16 +58,29 @@ OUT_DIR = "results-lista"
 SCHEDE_FATTE = "schede_fatte.txt"
 N_SETTIMANA = 5
 
-FAMIGLIE = ["GARP", "Radar A", "Radar B", "Moonshot", "Svolta"]
-# segnale -> famiglia: core e top 30 del GARP valgono una sola famiglia
+# 08/11/2026: Radar A e Moonshot sono una sola famiglia, "Crescita"
+# (REPORT_screener_tutti_2026-11-07); nuova famiglia "Qualità"
+FAMIGLIE = ["GARP", "Crescita", "Qualità", "Radar B", "Svolta"]
+# segnale -> famiglia: core e top 30 del GARP valgono una sola famiglia, e
+# così Radar A e Moonshot (Crescita)
 SEGNALI = {
     "GARP-core": "GARP",
     "GARP-top30": "GARP",
-    "Radar A": "Radar A",
+    "Radar A": "Crescita",
+    "Moonshot": "Crescita",
+    "Qualità": "Qualità",
     "Radar B": "Radar B",
-    "Moonshot": "Moonshot",
     "Svolta": "Svolta",
 }
+# famiglie fino al 08/11/2026: in conteggi_famiglie restano come conteggio dei
+# segnali, per non togliere chiavi dal report
+FAMIGLIE_VECCHIE = ("Radar A", "Moonshot")
+
+# Trade Republic (file creato da aggiorna_disponibilita_tr.py)
+DISPONIBILITA_TR = "disponibilita_tr.csv"
+TR_VALORI = ("probabile", "incerto", "probabilmente no")
+TR_ND = "n.d."
+TR_ASSENTE = "incerto"     # ticker non presente nel file
 SEMAFORI_TEMA = ("verde", "giallo")
 
 # guardia di sicurezza (stessi valori di garp_screener.CRITERIA; se il report
@@ -158,11 +182,14 @@ class Accumulatore:
 
     def __init__(self):
         self.righe = {}
+        # 08/11/2026: altri ticker della stessa società (dalla Qualità) -> ticker della riga
+        self.alias = {}
 
     def riga(self, ticker):
         t = norm_ticker(ticker)
         if not t:
             return None
+        t = self.alias.get(t, t)
         if t not in self.righe:
             self.righe[t] = {
                 "ticker": t, "altri_ticker": [], "nome": None, "settore": None, "paese": None,
@@ -174,6 +201,9 @@ class Accumulatore:
                 "peg_sospetto": None, "sicurezza_ok": None, "sicurezza_motivi": [],
                 "sicurezza_dati_mancanti": [],
                 "gia_radiografato": False, "settimana": False, "posizione": None,
+                # 08/11/2026
+                "crescita_fascia": None, "alto_rischio": False,
+                "acquistabile_tr": TR_ND, "isin": None, "isin_tr": None,
             }
         return self.righe[t]
 
@@ -191,8 +221,9 @@ class Accumulatore:
         fam = SEGNALI[segnale]
         if fam not in r["famiglie"]:
             r["famiglie"].append(fam)
-        if punteggio is not None and fam not in r["punteggi"]:
-            r["punteggi"][fam] = punteggio
+        # Crescita viene da due segnali (Radar A, Moonshot): vale il migliore
+        if punteggio is not None:
+            r["punteggi"][fam] = max(r["punteggi"].get(fam, punteggio), punteggio)
 
     def sicurezza(self, r, pct=None, pct_fonte=None, dil=None, dil_fonte=None):
         if r["pct_max_52s"] is None and num(pct) is not None:
@@ -253,8 +284,40 @@ def aggiungi_moonshot(acc, rep):
         acc.dati(row, r.get("name"), r.get("sector"), r.get("country"), None,
                  r.get("market_cap"), r.get("price"))
         acc.segnale(row, "Moonshot", perc.get(row["ticker"]))
+        # 08/11/2026: fascia della lista Crescita; la piccola è ad alto rischio
+        if row["crescita_fascia"] is None and r.get("fascia_dimensione"):
+            row["crescita_fascia"] = r.get("fascia_dimensione")
+        if r.get("alto_rischio"):
+            row["alto_rischio"] = True
+            if "crescita piccola: alto rischio" not in row["etichette"]:
+                row["etichette"].append("crescita piccola: alto rischio")
         acc.sicurezza(row, r.get("pct_of_52w_high"), "Moonshot", r.get("dilution_cagr"),
                       "Moonshot, media annua pluriennale")
+
+
+def aggiungi_qualita(acc, rep):
+    """Famiglia Qualità (dal 08/11/2026): i promossi Q3 di qualita_screener.py,
+    già ordinati per punteggio."""
+    lista = [r for r in rep.get("passed") or [] if r.get("passed", True)]
+    perc = percentili_per_posizione([norm_ticker(r.get("ticker")) for r in lista])
+    for r in lista:
+        tutti = [t for t in (norm_ticker(x) for x in [r.get("ticker"), *(r.get("altri_ticker") or [])])
+                 if t]
+        # se un altro screener ha già la società con un altro ticker, si usa quella riga
+        esistente = next((acc.alias.get(t, t) for t in tutti if acc.alias.get(t, t) in acc.righe),
+                         None)
+        row = acc.riga(esistente or r.get("ticker"))
+        if row is None:
+            continue
+        acc.dati(row, r.get("name"), r.get("sector"), r.get("country"), r.get("currency"),
+                 r.get("market_cap"), r.get("price"))
+        acc.segnale(row, "Qualità", perc.get(norm_ticker(r.get("ticker"))))
+        for t in tutti:
+            if t != row["ticker"]:
+                acc.alias.setdefault(t, row["ticker"])
+                if t not in row["altri_ticker"]:
+                    row["altri_ticker"].append(t)
+        acc.sicurezza(row, r.get("pct_of_52w_high"), "Qualità", None, None)
 
 
 def aggiungi_svolta(acc, rep):
@@ -279,6 +342,7 @@ def aggiungi_temi(acc, rep):
     nomi = rep.get("themes") or {}
     for r in rep.get("tracked") or []:
         t = norm_ticker(r.get("ticker"))
+        t = acc.alias.get(t, t)
         if t not in acc.righe or r.get("light") not in SEMAFORI_TEMA:
             continue
         row = acc.righe[t]
@@ -327,7 +391,8 @@ def unisci_doppie_quotazioni(righe):
             if tm not in a["temi"]:
                 a["temi"].append(tm)
         a["core"] = a["core"] or r["core"]
-        for k2 in ("punteggio_garp", "stime_mancate", "peg_sospetto", "pct_max_52s",
+        a["alto_rischio"] = a.get("alto_rischio") or r.get("alto_rischio")
+        for k2 in ("crescita_fascia", "punteggio_garp", "stime_mancate", "peg_sospetto", "pct_max_52s",
                    "pct_max_52s_fonte", "diluizione", "diluizione_fonte", "nome", "settore",
                    "paese", "valuta", "market_cap", "prezzo"):
             if a.get(k2) is None and r.get(k2) is not None:
@@ -372,6 +437,45 @@ def testo_dati_mancanti(r, breve=False):
     return ("manca " if len(nomi) == 1 else "mancano ") + " e ".join(nomi)
 
 
+def leggi_disponibilita_tr(path=DISPONIBILITA_TR):
+    """Disponibilità su Trade Republic dal file facoltativo (colonne ticker,
+    isin e acquistabile_tr, oppure flag; isin_tr se c'è). None se il file
+    manca o non si legge: allora ogni riga ha "n.d."."""
+    if not os.path.exists(path):
+        return None
+    out = {}
+    try:
+        with open(path, encoding="utf-8", newline="") as f:
+            for r in csv.DictReader(f):
+                t = norm_ticker(r.get("ticker"))
+                flag = (r.get("acquistabile_tr") or r.get("flag") or "").strip().lower()
+                if not t:
+                    continue
+                out[t] = {"acquistabile_tr": flag if flag in TR_VALORI else TR_ASSENTE,
+                          "isin": (r.get("isin") or "").strip() or None,
+                          "isin_tr": (r.get("isin_tr") or "").strip() or None}
+    except Exception as e:
+        print(f"[WARN] {path} non leggibile: {e}", file=sys.stderr)
+        return None
+    return out
+
+
+def applica_tr(r, disp):
+    """acquistabile_tr della riga: il migliore fra il ticker principale e gli
+    altri ticker della stessa società (probabile > incerto > probabilmente no)."""
+    if disp is None:
+        r["acquistabile_tr"] = TR_ND
+        return
+    voci = [disp[t] for t in [r["ticker"], *r["altri_ticker"]] if t in disp]
+    if not voci:
+        r["acquistabile_tr"] = TR_ASSENTE
+        return
+    best = min(voci, key=lambda v: TR_VALORI.index(v["acquistabile_tr"]))
+    r["acquistabile_tr"] = best["acquistabile_tr"]
+    r["isin"] = (disp.get(r["ticker"]) or best)["isin"]
+    r["isin_tr"] = best["isin_tr"]
+
+
 def chiave_ordine(r):
     """1) core GARP; 2) 2 o più famiglie (più famiglie prima); 3) punteggio medio."""
     return (not r["core"], r["n_famiglie"] < 2, -r["n_famiglie"],
@@ -379,14 +483,17 @@ def chiave_ordine(r):
             r["ticker"])
 
 
-def costruisci_lista(reports, schede_fatte=frozenset(), n_settimana=N_SETTIMANA):
+def costruisci_lista(reports, schede_fatte=frozenset(), n_settimana=N_SETTIMANA, disp_tr=None):
     """Funzione pura: dai report degli screener (dizionari, o None se mancanti)
-    alla lista unificata. Ritorna (lista, esclusi_sicurezza, settimana)."""
+    alla lista unificata. disp_tr = disponibilità su Trade Republic
+    (leggi_disponibilita_tr) o None. Ritorna (lista, esclusi_sicurezza, settimana)."""
     acc = Accumulatore()
     if reports.get("garp"):
         aggiungi_garp(acc, reports["garp"])
     if reports.get("moonshot"):
         aggiungi_moonshot(acc, reports["moonshot"])
+    if reports.get("qualita"):
+        aggiungi_qualita(acc, reports["qualita"])
     if reports.get("svolta"):
         aggiungi_svolta(acc, reports["svolta"])
     if reports.get("temi"):
@@ -408,17 +515,22 @@ def costruisci_lista(reports, schede_fatte=frozenset(), n_settimana=N_SETTIMANA)
         vals = [r["punteggi"][f] for f in r["famiglie"] if r["punteggi"].get(f) is not None]
         r["punteggio_medio"] = round(sum(vals) / len(vals), 1) if vals else None
         r["gia_radiografato"] = bool({r["ticker"], *r["altri_ticker"]} & fatte)
+        applica_tr(r, disp_tr)
         valuta_sicurezza(r, soglie)
         (esclusi if r["sicurezza_ok"] is False else lista).append(r)
 
     lista.sort(key=chiave_ordine)
     esclusi.sort(key=chiave_ordine)
-    settimana = []
     for i, r in enumerate(lista, 1):
         r["posizione"] = i
-        if len(settimana) < n_settimana and not r["gia_radiografato"]:
-            r["settimana"] = True
-            settimana.append(r["ticker"])
+    # 08/11/2026: prima i "probabile" su Trade Republic, poi gli altri
+    liberi = [r for r in lista if not r["gia_radiografato"]]
+    scelti = ([r for r in liberi if r["acquistabile_tr"] == "probabile"]
+              + [r for r in liberi if r["acquistabile_tr"] != "probabile"])[:n_settimana]
+    settimana = []
+    for r in scelti:
+        r["settimana"] = True
+        settimana.append(r["ticker"])
     return lista, esclusi, settimana
 
 
@@ -436,7 +548,8 @@ def _mld(x, valuta=None):
     return f"{x / 1e9:.1f}" + (f" {v}" if v else "")
 
 
-def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, oggi=None):
+def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, oggi=None,
+                  disp_tr=None, path_tr=DISPONIBILITA_TR):
     oggi = oggi or date.today().isoformat()
     fonti, avvisi = {}, []
     date_fonti = set()
@@ -452,6 +565,13 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
         avvisi.append("le fonti hanno date diverse: " + ", ".join(
             f"{k} {v['date']}" for k, v in fonti.items() if v["date"]))
     conteggi = {f: sum(1 for r in lista if f in r["famiglie"]) for f in FAMIGLIE}
+    conteggi_segnali = {s: sum(1 for r in lista if s in r["segnali"]) for s in SEGNALI}
+    # chiavi delle famiglie di prima (Radar A, Moonshot): conteggio per segnale
+    conteggi_famiglie = dict(conteggi, **{f: conteggi_segnali[f] for f in FAMIGLIE_VECCHIE})
+    conteggi_tr = {v: sum(1 for r in lista if r.get("acquistabile_tr") == v)
+                   for v in (*TR_VALORI, TR_ND)}
+    if disp_tr is None:
+        avvisi.append(f"{path_tr} assente o non leggibile: acquistabile_tr = \"{TR_ND}\"")
     garp = reports.get("garp") or {}
 
     report = {
@@ -462,7 +582,10 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
         "avvisi": avvisi,
         "famiglie": FAMIGLIE,
         "regola_famiglie": "GARP-core e GARP-top30 contano come una sola famiglia (GARP). "
-                           "I Temi (semaforo verde o giallo) danno solo l'etichetta 'tema: <nome>'.",
+                           "Dal 08/11/2026 Radar A e Moonshot contano come una sola famiglia "
+                           "(Crescita) e c'è la famiglia Qualità. I Temi (semaforo verde o "
+                           "giallo) danno solo l'etichetta 'tema: <nome>': non testati, nessun "
+                           "vantaggio dimostrato.",
         "regola_ordine": "1) core GARP; 2) 2 o più famiglie, più famiglie prima; "
                          "3) punteggio_medio (media dei percentili dentro ogni famiglia).",
         "regola_sicurezza": "Esce dalla lista chi ha prezzo sotto il 40% del massimo a 52 "
@@ -472,11 +595,21 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
                             "resta, con l'elenco in sicurezza_dati_mancanti (sicurezza_ok null "
                             "se mancano entrambi).",
         "regola_settimana": f"I primi {N_SETTIMANA} della lista non ancora radiografati "
-                            f"({SCHEDE_FATTE}).",
+                            f"({SCHEDE_FATTE}): prima quelli \"probabile\" su Trade Republic, "
+                            "poi gli altri nell'ordine della lista.",
+        "regola_tr": f"acquistabile_tr da {path_tr} (aggiorna_disponibilita_tr.py): "
+                     "\"probabile\", \"incerto\", \"probabilmente no\"; per una società "
+                     "con più ticker vale il migliore. Ticker assente dal file = \"incerto\"; "
+                     f"file assente = \"{TR_ND}\". È una deduzione dalle quotazioni tedesche: "
+                     "va controllata nell'app.",
+        "disponibilita_tr": {"file": path_tr, "letto": disp_tr is not None,
+                             "righe": len(disp_tr) if disp_tr is not None else 0},
+        "conteggi_tr": conteggi_tr,
+        "conteggi_segnali": conteggi_segnali,
         "n_righe": len(lista),
         "n_2_famiglie": sum(1 for r in lista if r["n_famiglie"] >= 2),
         "n_core": sum(1 for r in lista if r["core"]),
-        "conteggi_famiglie": conteggi,
+        "conteggi_famiglie": conteggi_famiglie,
         "schede_fatte_count": len(fatte),
         "settimana": settimana,
         "lista": lista,
@@ -492,6 +625,8 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
     def riga_breve(r):
         et = "; ".join(r["etichette"])
         return (f"**{r['ticker']}** — {(r.get('nome') or '')[:40]} · {', '.join(r['segnali'])}"
+                + f" · Trade Republic: {r.get('acquistabile_tr', TR_ND)}"
+                + (f" (ISIN da cercare: {r['isin_tr']})" if r.get("isin_tr") else "")
                 + (f" · {et}" if et else "")
                 + (f" · punteggio GARP {r['punteggio_garp']}" if r["punteggio_garp"] is not None else "")
                 + (f" · ⚠ sicurezza non verificabile: {testo_dati_mancanti(r)}"
@@ -499,24 +634,25 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
 
     L = [f"# Lista da radiografare — {oggi}", "",
          "> **Elenco di aziende da analizzare a mano (Radiografia), non da comprare.** "
-         "Una riga per società, dai segnali di GARP (core o top 30), Radar A, Radar B, "
-         "Moonshot e Svolta. Nel passato i titoli presi da 2 o più famiglie di screener "
-         "hanno reso di più (circa +10 punti l'anno sull'universo, 2012-26), ma i perdenti "
-         "restano circa uno su quattro.", ""]
+         "Una riga per società, dai segnali di GARP (core o top 30), Crescita (Radar A e "
+         "Moonshot, una sola famiglia), Qualità, Radar B e Svolta. Nel passato i titoli presi "
+         "da 2 o più famiglie di screener hanno reso di più (circa +10 punti l'anno "
+         "sull'universo, 2012-26), ma i perdenti restano circa uno su quattro.", ""]
     for a in avvisi:
         L += [f"> ⚠️ {a}", ""]
     L += [f"Titoli in lista: **{len(lista)}** | Core GARP: {report['n_core']} | "
           f"In 2+ famiglie: {report['n_2_famiglie']} | Esclusi per sicurezza: {len(esclusi)} | "
           f"Già radiografati (in {SCHEDE_FATTE}): {len(fatte)}",
-          "Per famiglia: " + ", ".join(f"{k} {v}" for k, v in conteggi.items()), "",
+          "Per famiglia: " + ", ".join(f"{k} {v}" for k, v in conteggi.items()),
+          "Trade Republic: " + ", ".join(f"{k} {v}" for k, v in conteggi_tr.items() if v), "",
           f"## Questa settimana ({len(settimana)})", ""]
     per_t = {r["ticker"]: r for r in lista}
     L += [f"{i}. {riga_breve(per_t[t])}" for i, t in enumerate(settimana, 1)] or ["- nessuno"]
     L += ["", "## Lista completa", "",
-          "| # | Ticker | Nome | Segnali | Fam. | Etichette | Punt. GARP | Punt. medio | % max 52s | Cap. (Mld) | Sicurezza | Fatto |",
-          "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+          "| # | Ticker | Nome | Segnali | Fam. | Etichette | Punt. GARP | Punt. medio | % max 52s | Cap. (Mld) | Sicurezza | TR | Fatto |",
+          "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in lista:
-        L.append("| {p} | {t} | {n} | {s} | {nf} | {e} | {pg} | {pm} | {pc} | {mc} | {sic} | {f} |".format(
+        L.append("| {p} | {t} | {n} | {s} | {nf} | {e} | {pg} | {pm} | {pc} | {mc} | {sic} | {tr} | {f} |".format(
             p=r["posizione"], t=r["ticker"] + (" ⭐" if r["settimana"] else ""),
             n=(r.get("nome") or "")[:30], s=", ".join(r["segnali"]), nf=r["n_famiglie"],
             e="; ".join(r["etichette"]) or "—",
@@ -524,6 +660,7 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
             pm=r["punteggio_medio"] if r["punteggio_medio"] is not None else "—",
             pc=_pct(r["pct_max_52s"]), mc=_mld(r["market_cap"], r.get("valuta")),
             sic=testo_dati_mancanti(r, breve=True) or "ok",
+            tr=r.get("acquistabile_tr", TR_ND),
             f="✓" if r["gia_radiografato"] else ""))
     L += ["", f"## Esclusi per sicurezza ({len(esclusi)})", ""]
     for r in esclusi:
@@ -539,10 +676,15 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
     if report["garp_esclusi_sicurezza"]:
         L += ["", "Esclusi già dal GARP (vedi results/latest.md): "
               + ", ".join(report["garp_esclusi_sicurezza"])]
-    L += ["", "Regole: core e top 30 del GARP valgono una sola famiglia; ordine = core GARP, poi "
+    L += ["", "Regole: core e top 30 del GARP valgono una sola famiglia, e così Radar A e Moonshot "
+          "(Crescita); ordine = core GARP, poi "
           "2+ famiglie (più famiglie prima), poi punteggio medio (media dei percentili del titolo "
-          "dentro ciascuna famiglia). Etichette: \"margine in svolta\" (Svolta), \"tema: …\" "
-          "(Temi con semaforo verde o giallo). ⭐ = nei 5 della settimana. Le società quotate su più "
+          "dentro ciascuna famiglia). Etichette: \"margine in svolta\" (Svolta), \"crescita "
+          "piccola: alto rischio\" (Crescita sotto 2 Mld$), \"tema: …\" "
+          "(Temi con semaforo verde o giallo: non testati, nessun vantaggio dimostrato, solo "
+          "etichetta). ⭐ = nei 5 della settimana (prima i \"probabile\" su Trade Republic). "
+          "Colonna TR: acquistabile su Trade Republic secondo "
+          f"{path_tr} (deduzione, da controllare nell'app). Le società quotate su più "
           "borse con lo stesso nome sono unite in una riga (altri ticker nel JSON). Colonna "
           "Sicurezza: \"ok\" = guardia superata; \"⚠ manca …\" o \"⚠ non verificabile\" = "
           "manca un dato della guardia (o tutti e due), il titolo resta in lista ma va "
@@ -558,8 +700,9 @@ def main():
         print("ERRORE: nessun report degli screener trovato", file=sys.stderr)
         sys.exit(1)
     fatte = leggi_schede_fatte()
-    lista, esclusi, settimana = costruisci_lista(reports, fatte)
-    scrivi_report(lista, esclusi, settimana, reports, fatte)
+    disp_tr = leggi_disponibilita_tr()
+    lista, esclusi, settimana = costruisci_lista(reports, fatte, disp_tr=disp_tr)
+    scrivi_report(lista, esclusi, settimana, reports, fatte, disp_tr=disp_tr)
     print(f"Lista da radiografare: {len(lista)} titoli, {len(esclusi)} esclusi per sicurezza; "
           f"settimana: {', '.join(settimana) or '—'}")
 

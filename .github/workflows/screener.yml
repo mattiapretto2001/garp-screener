@@ -17,6 +17,9 @@ on:
       - "results-lista/**"
       - "results-svolta/**"
       - "schede_fatte.txt"
+      # dal 08/11/2026 (2): Qualità durevole e disponibilità su Trade Republic
+      - "results-qualita/**"
+      - "disponibilita_tr.csv"
 
 permissions:
   contents: write
@@ -122,8 +125,9 @@ jobs:
   merge:
     needs: shard
     runs-on: ubuntu-latest
-    # 45 dal 08/11/2026 (era 30): in più la lista da radiografare e le stime EODHD
-    timeout-minutes: 45
+    # 45 dal 08/11/2026 (era 30): in più la lista da radiografare e le stime EODHD;
+    # 60 dal 08/11/2026 (2): in più la Qualità durevole (bilanci EODHD)
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -167,6 +171,20 @@ jobs:
           MODE: merge
         run: python svolta_screener.py
 
+      # Qualità durevole (dal 08/11/2026, regola Q3 del backtest): primo filtro
+      # sulla cache .info del GARP (partials/info-*.json), bilanci EODHD solo per
+      # i candidati (cap. >= 5 Mld$, ROE > 15%, settore ammesso), con una cache
+      # dei soli valori derivati (licenza: repo pubblico). Gira prima della lista.
+      - name: Run Qualita screener (EODHD)
+        continue-on-error: true
+        timeout-minutes: 20
+        env:
+          EODHD_API_TOKEN: ${{ secrets.EODHD_API_TOKEN }}
+          QUALITA_CAP_CREDITI: "15000"
+          QUALITA_RESIDUO_MIN: "5000"
+          QUALITA_TEMPO_MAX_S: "900"
+        run: python qualita_screener.py
+
       # Lista unica "da radiografare" (dal 08/11/2026): legge i latest.json di
       # tutti gli screener, quindi gira dopo di loro. Non deve bloccare il commit.
       - name: Build radiography list
@@ -202,6 +220,7 @@ jobs:
           git add results/ results-moonshot/ results-temi/ snapshots/
           git add results-svolta/ 2>/dev/null || true
           git add results-lista/ 2>/dev/null || true
+          git add results-qualita/ 2>/dev/null || true
           git diff --cached --quiet || git commit -m "Screening GARP+Moonshot+Temi $(date -u +%F)"
           # dal 08/11/2026: prima si fa il commit, poi si riallinea a main e si spinge,
           # con 4 tentativi: se main cambia durante il job i risultati non vanno persi

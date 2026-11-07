@@ -7,12 +7,24 @@ enormi (es. Palantir, Bloom Energy): small/mid cap in ipercrescita con
 momentum di prezzo, MA con filtri di sopravvivenza che riducono la
 probabilità di fallimento (cassa, debito, diluizione, traction commerciale).
 
+Dal 08/11/2026 è la lista "Crescita": stesse regole a OGNI taglia, senza il
+tetto di 15 Mld$, divisa per fascia (backtest mondiale EODHD 2012-26,
+REPORT_screener_tutti_2026-11-07: sopra l'universo della stessa taglia
+piccole +6,5, medie +5,3, grandi +9,6 punti l'anno):
+  - piccola 0,15-2 Mld$  -> alto_rischio = true (nelle piccole americane le
+    regole hanno fatto peggio del mercato, -2 punti l'anno; altrove fragile)
+  - media   2-15 Mld$
+  - grande  oltre 15 Mld$
+Capitalizzazione e ricavi sono convertiti in dollari con cambi indicativi
+(FX_USD; prima erano confrontati nella valuta di quotazione).
+
 FILTRI OBBLIGATORI (tutti):
-  - Market cap tra 150 M$ e 15 B$ (small/mid cap: lo spazio dei moonshot)
+  - Market cap da 150 M$ in su (nessun tetto dal 08/11/2026; era 150 M$ - 15 B$)
   - Ricavi TTM > 100 M$ (traction commerciale reale, niente story-stock pre-ricavi)
   - Crescita ricavi trimestrale YoY > 25% (ipercrescita)
   - Margine lordo > 25% (economia unitaria scalabile)
-  - Momentum: prezzo >= 70% del massimo a 52 settimane E sopra la media a 200 giorni
+  - Momentum: prezzo sopra la media a 200 giorni (il 70% del massimo a 52
+    settimane è solo un'etichetta dal 27/10/2026: momentum_solo_200gg)
   - Sopravvivenza:
       * se FCF < 0: cassa sufficiente per > 2 anni al ritmo di burn attuale
       * debito totale <= 2x la cassa
@@ -25,11 +37,15 @@ PUNTEGGIO BONUS (ordina i candidati, non esclude):
   +1 margine operativo in miglioramento anno su anno
   +1 FCF già positivo
   +1 posizione di cassa netta (cassa > debito)
-  +1 prezzo entro il 10% dal massimo a 52 settimane
+  +0,5 prezzo entro il 10% dal massimo a 52 settimane (era +1 fino al 08/11/2026:
+       il momentum non è confermato sul 2000-2011, R_storico_2000_2011)
   +1 stime EPS riviste al rialzo negli ultimi 30 giorni
   +1 stime EPS dell'anno prossimo salite di almeno il 10% in 90 giorni (dal 10/10/2026)
 
+Punteggio massimo 7,5 (era 8). Il dettaglio è in score_componenti.
+
 Output: results-moonshot/YYYY-MM-DD.json, latest.json, latest.md
+(dal 08/11/2026 anche crescita_per_fascia: conteggi e liste per fascia)
 La validazione QUALITATIVA (vantaggio competitivo, trend secolare, TAM,
 concorrenza) è fatta ogni sera da Claude sui nuovi ingressi.
 """
@@ -50,8 +66,10 @@ import yfinance as yf
 import garp_screener as base
 
 CRITERIA = {
-    "mcap_min": 150e6,
-    "mcap_max": 15e9,
+    "mcap_min": 150e6,             # in dollari (convertito con FX_USD dal 08/11/2026)
+    # 08/11/2026: nessun tetto (era 15e9). La chiave resta, con null, per non
+    # togliere campi dal report
+    "mcap_max": None,
     "revenue_ttm_min": 100e6,
     "rev_growth_min": 0.25,
     "gross_margin_min": 0.25,
@@ -61,7 +79,65 @@ CRITERIA = {
     "net_debt_ebitda_max": 2.5,   # alternativa al debito/cassa per chi ha EBITDA > 0
     "current_ratio_min": 1.2,
     "dilution_cagr_max": 0.15,
+    # 08/11/2026: fasce di capitalizzazione in dollari (lista Crescita)
+    "fascia_piccola_max": 2e9,
+    "fascia_media_max": 15e9,
+    # 08/11/2026: peso del prezzo vicino al massimo nel punteggio (era 1)
+    "bonus_vicino_massimo": 0.5,
 }
+
+# Cambi indicativi verso USD (la capitalizzazione di Yahoo è nella valuta di
+# quotazione; GBp = pence, ma capitalizzazione e ricavi sono in sterline).
+# Stessa tabella dello screener Svolta.
+FX_USD = {"USD": 1.0, "EUR": 1.08, "GBP": 1.27, "GBp": 1.27, "CHF": 1.13,
+          "SEK": 0.095, "NOK": 0.092, "DKK": 0.145, "JPY": 0.0066, "HKD": 0.128,
+          "CNY": 0.14, "CAD": 0.72, "AUD": 0.65, "KRW": 0.00072, "TWD": 0.031,
+          "INR": 0.012, "ILS": 0.27, "PLN": 0.25, "SGD": 0.74, "BRL": 0.18,
+          "ZAR": 0.055, "MXN": 0.054}
+
+# Fasce della lista Crescita (08/11/2026). La piccola è "alto rischio":
+# nel backtest 2012-26 la fascia piccola batte l'universo nel mondo (+6,5
+# punti l'anno) ma è debole proprio dove ci sono più titoli.
+FASCE = ("piccola", "media", "grande")
+FASCE_LIMITI_MLD = {"piccola": (0.15, 2), "media": (2, 15), "grande": (15, None)}
+MOTIVO_RISCHIO_USA = ("piccola americana: nel backtest 2012-26 le regole qui hanno fatto "
+                      "peggio del mercato (circa -2 punti l'anno)")
+MOTIVO_RISCHIO_ALTRE = ("piccola: nel backtest 2012-26 risultato fragile (sotto il mercato "
+                        "in Europa e in Asia)")
+MAX_PASSED_JSON = 250   # promossi scritti in "passed" (erano 100: ora ci sono anche le grandi)
+
+
+def in_usd(valore, valuta):
+    """Importo convertito in dollari con i cambi indicativi; None se la
+    valuta non è nota o il valore manca."""
+    try:
+        v = float(valore)
+    except (TypeError, ValueError):
+        return None
+    if v != v:
+        return None
+    fx = FX_USD.get(valuta or "USD")
+    return v * fx if fx else None
+
+
+def fascia_dimensione(mcap_usd):
+    """'piccola' (0,15-2 Mld$), 'media' (2-15), 'grande' (oltre 15) o None."""
+    if mcap_usd is None or mcap_usd < CRITERIA["mcap_min"]:
+        return None
+    if mcap_usd < CRITERIA["fascia_piccola_max"]:
+        return "piccola"
+    if mcap_usd <= CRITERIA["fascia_media_max"]:
+        return "media"
+    return "grande"
+
+
+def rischio_fascia(fascia, country, index_name=None):
+    """(alto_rischio, motivo). Alto rischio = fascia piccola; il motivo
+    distingue le americane, dove le regole non hanno funzionato."""
+    if fascia != "piccola":
+        return False, None
+    usa = country == "United States" or str(index_name or "").startswith("USA")
+    return True, (MOTIVO_RISCHIO_USA if usa else MOTIVO_RISCHIO_ALTRE)
 
 # Dal 10/10/2026 il Moonshot non eredita più le esclusioni di settore del GARP:
 # energia e materie prime restano ammesse ma segnalate come cicliche
@@ -192,6 +268,11 @@ def screen_ticker(symbol, index_name):
         ebitda = info.get("ebitda")
 
         pct_high = (price / high52) if price and high52 else None
+        currency = info.get("currency")
+        mcap_usd = in_usd(mcap, currency)
+        rev_usd = in_usd(rev_ttm, currency)
+        fascia = fascia_dimensione(mcap_usd)
+        alto_rischio, rischio_motivo = rischio_fascia(fascia, info.get("country"), index_name)
         runway = None
         if fcf is not None and fcf < 0 and cash:
             runway = cash / abs(fcf)
@@ -207,8 +288,10 @@ def screen_ticker(symbol, index_name):
 
         checks = {
             "sector_ok": sector is not None,
-            "mcap_ok": mcap is not None and CRITERIA["mcap_min"] <= mcap <= CRITERIA["mcap_max"],
-            "revenue_scale_ok": rev_ttm is not None and rev_ttm > CRITERIA["revenue_ttm_min"],
+            # 08/11/2026: in dollari e senza tetto (mcap_max = None)
+            "mcap_ok": (mcap_usd is not None and mcap_usd >= CRITERIA["mcap_min"]
+                        and (CRITERIA["mcap_max"] is None or mcap_usd <= CRITERIA["mcap_max"])),
+            "revenue_scale_ok": rev_usd is not None and rev_usd > CRITERIA["revenue_ttm_min"],
             "hypergrowth_ok": rev_g is not None and rev_g > CRITERIA["rev_growth_min"],
             "gross_margin_ok": gm_ok,
             "momentum_ok": price is not None and ma200 is not None and price > ma200,
@@ -249,6 +332,12 @@ def screen_ticker(symbol, index_name):
             "industry": info.get("industry"),
             "country": info.get("country"),
             "market_cap": mcap,
+            # 08/11/2026: lista Crescita per fascia
+            "currency": currency,
+            "market_cap_usd": mcap_usd,
+            "fascia_dimensione": fascia,
+            "alto_rischio": alto_rischio,
+            "alto_rischio_motivo": rischio_motivo,
             "revenue_ttm": rev_ttm,
             "revenue_growth_qoq_yoy": rev_g,
             "gross_margin": gm,
@@ -284,32 +373,39 @@ def screen_ticker(symbol, index_name):
             return result
 
         score = 0
+        comp = {}   # 08/11/2026: dettaglio del punteggio (score_componenti)
         cagr = base.sales_cagr_multi_year(tk)
         result["sales_cagr_multi_year"] = cagr
         accel = cagr is not None and rev_g is not None and rev_g > cagr
         if accel:
-            score += 2
+            comp["accelerazione"] = 2
         margin_up = _operating_margin_trend(tk)
         if margin_up:
-            score += 1
+            comp["margine_operativo_in_salita"] = 1
         if fcf is not None and fcf > 0:
-            score += 1
+            comp["fcf_positivo"] = 1
         if cash is not None and debt is not None and cash > debt:
-            score += 1
+            comp["cassa_netta"] = 1
         if pct_high is not None and pct_high >= 0.90:
-            score += 1
+            # 08/11/2026: mezzo punto (era 1): il momentum non è confermato
+            # sul 2000-2011 (R_storico_2000_2011); resta come freno ai crolli
+            comp["vicino_al_massimo"] = CRITERIA["bonus_vicino_massimo"]
         eps_up = _eps_revised_up(tk)
         if eps_up:
-            score += 1
-        # dal 10/10/2026: conta anche QUANTO salgono le stime (score max 8)
+            comp["stime_eps_al_rialzo_30g"] = 1
+        # dal 10/10/2026: conta anche QUANTO salgono le stime (score max 7,5)
         est = base.estimate_metrics(tk, info)
         result.update(est)
         if (est["revisione_stime_90g"] or 0) >= 0.10:
-            score += 1
+            comp["stime_anno_prossimo_10pct_90g"] = 1
+        score = sum(comp.values())
+        if score == int(score):
+            score = int(score)
 
         result.update({
             "passed": True,
             "score": score,
+            "score_componenti": comp,
             "accelerating": accel,
             "operating_margin_improving": margin_up,
             "eps_estimates_revised_up": eps_up,
@@ -342,6 +438,34 @@ def _refetch_missing_multi_year(results):
     return [fixed.get(r.get("ticker"), r) for r in results]
 
 
+def crescita_per_fascia(passed):
+    """Campo crescita_per_fascia del report (08/11/2026): per ogni fascia il
+    conteggio e la lista completa dei promossi (non solo i primi del campo
+    passed), nell'ordine del punteggio."""
+    out = {
+        "regola": "Regole Moonshot a ogni taglia (lista Crescita). Fasce di capitalizzazione "
+                  "in dollari: piccola 0,15-2 Mld, media 2-15, grande oltre 15. La fascia "
+                  "piccola è ad alto rischio: va radiografata titolo per titolo.",
+    }
+    for k in FASCE:
+        rows = [r for r in passed if r.get("fascia_dimensione") == k]
+        da, a = FASCE_LIMITI_MLD[k]
+        out[k] = {
+            "da_mld_usd": da,
+            "a_mld_usd": a,
+            "conteggio": len(rows),
+            "alto_rischio": k == "piccola",
+            "ticker": [r["ticker"] for r in rows],
+            "titoli": [{"ticker": r["ticker"], "name": r.get("name"), "score": r.get("score"),
+                        "country": r.get("country"), "market_cap_usd": r.get("market_cap_usd"),
+                        "alto_rischio": bool(r.get("alto_rischio")),
+                        "alto_rischio_motivo": r.get("alto_rischio_motivo")} for r in rows],
+        }
+    senza = [r["ticker"] for r in passed if r.get("fascia_dimensione") not in FASCE]
+    out["senza_fascia"] = {"conteggio": len(senza), "ticker": senza}
+    return out
+
+
 def make_report(results, universe_size, started):
     errors = sum(1 for r in results if r.get("error"))
 
@@ -370,7 +494,9 @@ def make_report(results, universe_size, started):
         "new_today": new_today,
         "dropped_since_yesterday": dropped,
         "passed_old_criteria": sum(1 for r in passed if not r.get("criteri_nuovi")),
-        "passed": passed[:100],
+        "passed": passed[:MAX_PASSED_JSON],
+        # 08/11/2026: lista Crescita divisa per fascia di capitalizzazione
+        "crescita_per_fascia": crescita_per_fascia(passed),
         **quality,
     }
 
@@ -393,14 +519,23 @@ def make_report(results, universe_size, started):
         "",
         "† = passa solo coi criteri nuovi del 10/10/2026 (Europa mid/small, settori, debito/EBITDA, liquidità); ⟳ = ciclico",
         "",
-        "| Ticker | Nome | Score | Ricavi q/q | Margine lordo | % dal max 52w | FCF+ | Accel. | Nuovo |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "Dal 08/11/2026 è la lista **Crescita**: stesse regole a ogni taglia, divisa per fascia "
+        "(capitalizzazione in dollari). ⚠ = fascia piccola, alto rischio: va radiografata "
+        "titolo per titolo. Nel punteggio il prezzo vicino al massimo vale mezzo punto (era 1).",
+        "",
+        "Per fascia: " + ", ".join(
+            f"{k} {report['crescita_per_fascia'][k]['conteggio']}" for k in FASCE),
+        "",
+        "| Ticker | Nome | Fascia | Score | Ricavi q/q | Margine lordo | % dal max 52w | FCF+ | Accel. | Nuovo |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in passed[:40]:
         lines.append(
-            "| {t} | {n} | {sc} | {rg} | {gm} | {ph} | {fcf} | {ac} | {new} |".format(
+            "| {t} | {n} | {fa} | {sc} | {rg} | {gm} | {ph} | {fcf} | {ac} | {new} |".format(
                 t=r["ticker"] + (" †" if r.get("criteri_nuovi") else "") + (" ⟳" if r.get("ciclico") else ""),
-                n=(r.get("name") or "")[:30], sc=r.get("score"),
+                n=(r.get("name") or "")[:30],
+                fa=(r.get("fascia_dimensione") or "n/d") + (" ⚠" if r.get("alto_rischio") else ""),
+                sc=r.get("score"),
                 rg=pct(r.get("revenue_growth_qoq_yoy")), gm=pct(r.get("gross_margin")),
                 ph=pct(r.get("pct_of_52w_high")),
                 fcf="✓" if (r.get("free_cash_flow") or 0) > 0 else "–",
@@ -408,6 +543,14 @@ def make_report(results, universe_size, started):
                 new="🆕" if r["ticker"] in new_today else "",
             )
         )
+    for k in FASCE:
+        fx = report["crescita_per_fascia"][k]
+        da, a = FASCE_LIMITI_MLD[k]
+        lim = f"{da:g}-{a:g} Mld$".replace(".", ",") if a else f"oltre {da:g} Mld$"
+        lines += ["", f"## Crescita {k} ({lim}): {fx['conteggio']}"
+                  + (" — ⚠ alto rischio" if fx["alto_rischio"] else ""), ""]
+        lines.append(", ".join(
+            f"{t['ticker']} ({t['score']})" for t in fx["titoli"]) or "nessuna")
     with open(os.path.join(RESULTS_DIR, "latest.md"), "w") as f:
         f.write("\n".join(lines) + "\n")
 

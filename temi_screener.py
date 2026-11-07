@@ -27,6 +27,11 @@ e un SEMAFORO:
   - rosso:  rischio di sopravvivenza (in perdita con runway < 2 anni,
             diluizione > 30%/anno, debito netto/EBITDA > 6x, 8x per le utility)
 
+NON TESTATO (dal 08/11/2026 lo dice anche il report, campo non_testato): la
+lista curata non si può provare sul passato senza il senno di poi, e le
+industrie intere sono andate in media peggio del mercato (backtest EODHD
+2012-26). È un monitor: nessun vantaggio dimostrato, solo etichetta.
+
 Il punteggio 0-8 ordina i titoli dentro ogni tema. Output:
 results-temi/YYYY-MM-DD.json, latest.json, latest.md
 La lettura qualitativa (catalizzatori, licenze, contratti) la fa Claude.
@@ -43,6 +48,13 @@ import yfinance as yf
 import garp_screener as base
 
 RESULTS_DIR = "results-temi"
+
+# 08/11/2026 (REPORT_screener_tutti_2026-11-07, paragrafo 4c)
+NOTA_NON_TESTATO = ("Monitor: nessun vantaggio dimostrato; solo etichetta. La lista curata "
+                    "non si può provare sul passato senza il senno di poi; le industrie "
+                    "intere (uranio, rinnovabili, solare, rame...) nel 2012-26 sono andate in "
+                    "media peggio del mercato, con fiammate brevi. Per esporsi a un tema è "
+                    "meglio un ETF di settore, con una quota piccola e fissa.")
 MAX_WORKERS = 4
 # dal 03/11/2026 (era 1 Mld e 40 titoli): entrano anche le piccole dei temi
 DISCOVERY_MCAP_MIN = 300e6
@@ -302,6 +314,9 @@ def make_report(results, curated, started):
     report = {
         "screener": "temi",
         "date": today,
+        # 08/11/2026: monitor non testato
+        "non_testato": True,
+        "nota_non_testato": NOTA_NON_TESTATO,
         "generated_at_utc": started.isoformat(),
         "duration_seconds": round((datetime.now(timezone.utc) - started).total_seconds()),
         "criteria": CRITERIA,
@@ -324,6 +339,7 @@ def make_report(results, curated, started):
 
     dot = {"verde": "🟢", "giallo": "🟡", "rosso": "🔴"}
     lines = [f"# Temi strutturali — {today}", "",
+             f"> ⚠️ **Non testato.** {NOTA_NON_TESTATO}", "",
              *base.quality_md_lines(quality, len(errors), len(results)),
              f"Seguiti: {len(ok)} | Verdi: **{len(greens)}** | "
              f"Nuovi verdi: {', '.join(report['new_green']) or '—'} | "
