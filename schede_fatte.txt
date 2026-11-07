@@ -1,0 +1,28 @@
+# Titoli già radiografati: la lista da radiografare (lista_radiografare.py)
+# li esclude dai 5 della settimana. Un ticker per riga, come in Yahoo; # per i commenti.
+# Aggiornare dopo ogni Radiografia.
+TSM
+ASML.AS
+NBIX
+VRT
+FIX
+ATAT
+WDAY
+ORNBV.HE
+HALO
+CRDO
+KLIC
+COHU
+AIXA.DE
+BLLN
+CLS
+ZAP.OL
+G24.DE
+EME
+AVGO
+NU
+KSPI
+CRSP
+SAF.PA
+MA
+SPGI

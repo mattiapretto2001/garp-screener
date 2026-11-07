@@ -525,6 +525,14 @@ def evaluate(symbol, cached, index_name=None, strict=False):
         r = score_one(symbol, info, quarterly_metrics(q), annual_metrics(a),
                       dilution_1y(bs), eps_estimates(tr), insider_buy_share(ip),
                       index_name)
+        pm = r.get("pct_of_52w_high")
+        if r.get("passed") and pm is not None and pm < base.CRITERIA["sicurezza_pct_max52_min"]:
+            # 08/11/2026: il massimo di .info non è rettificato per i frazionamenti;
+            # per i promossi sotto soglia lo si ricalcola sullo storico prezzi
+            ver = base.pct_max_52s_da_storico(tk)
+            r["pct_max_52s_verificato"] = ver
+            r.update(base.safety_fields({"variazione_azioni_1a": r.get("diluizione"),
+                                         "pct_max_52s": pm, "pct_max_52s_verificato": ver}))
         r["dati_mancanti"] = [n for n, v in (("info", full), ("trimestrali", q), ("annuali", a),
                                              ("bilancio", bs), ("stime", tr))
                               if v is None or (isinstance(v, dict) and not v)]
@@ -621,6 +629,9 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
         avvisi.append(f"diluizione {dil*100:.0f}% l'anno (oltre 10%)")
     if runway is not None and runway < C["runway_years_min"]:
         avvisi.append(f"cassa per {runway:.1f} anni al consumo attuale (meno di 2)")
+    # guardia di sicurezza del GARP (08/11/2026): qui solo etichetta, non esclude
+    # (per i promossi sotto soglia evaluate() ricontrolla il massimo sullo storico)
+    sic_dati = {"variazione_azioni_1a": dil, "pct_max_52s": pct_high}
 
     checks = {
         # filtri obbligatori B1
@@ -774,6 +785,9 @@ def score_one(symbol, info, qm, am, dil, est, ins, index_name=None):
         "diluizione": dil,
         "insider_quota_acquisti": ins,
         "avvisi": avvisi,
+        # sicurezza_ok, sicurezza_motivi, sicurezza_nota, sicurezza_dati_mancanti
+        **base.safety_fields(sic_dati),
+        "pct_max_52s_verificato": None,
         "tema_affollato": any(w in ind for w in CROWDED_INDUSTRY_WORDS),
         "punteggio_100": total,
         "punteggio": round(total / 10, 1),
@@ -983,16 +997,27 @@ def make_report(results, meta, started):
               + (f" (dati mancanti: {', '.join(r['dati_mancanti'])})" if r.get("dati_mancanti") else "")]
         if r.get("avvisi"):
             L.append(f"- ⚠ Avvisi: {'; '.join(r['avvisi'])}")
+        if r.get("sicurezza_ok") is False:
+            L.append(f"- ⚠ Guardia di sicurezza non superata (solo etichetta): {r.get('sicurezza_nota')}")
+        if r.get("sicurezza_dati_mancanti"):
+            L.append("- ⚠ Sicurezza non verificabile: "
+                     + base.safety_missing_text(r["sicurezza_dati_mancanti"]))
         L.append("")
     if len(passed) > TOP_N_MD:
         L += ["## Gli altri promossi", "",
               "| # | Ticker | Nome | Punteggio | Ricavi | Margine lordo | Margine op. 12m | Avvisi |",
               "|---|---|---|---|---|---|---|---|"]
         for r in passed[TOP_N_MD:]:
+            avv = list(r.get("avvisi") or [])
+            if r.get("sicurezza_ok") is False:
+                avv.append(f"guardia di sicurezza non superata: {r.get('sicurezza_nota')}")
+            if r.get("sicurezza_dati_mancanti"):
+                avv.append("sicurezza non verificabile: "
+                           + base.safety_missing_text(r["sicurezza_dati_mancanti"]))
             L.append(f"| {r['posizione']} | {r['ticker']} | {(r.get('nome') or '')[:30]} | "
                      f"{r['punteggio']:.1f} | {_pct(r.get('crescita_ricavi'))} | "
                      f"{_pct(r.get('margine_lordo'))} | {_pct(r.get('margine_operativo'))} | "
-                     f"{'; '.join(r.get('avvisi') or []) or '—'} |")
+                     f"{'; '.join(avv) or '—'} |")
         L.append("")
     if near:
         L += ["## Quasi (manca un solo filtro)", "",

@@ -13,6 +13,10 @@ on:
       - "results-temi/**"
       - "snapshots/**"
       - "watchlist.txt"
+      # dal 08/11/2026: lista da radiografare e schede fatte non fanno partire lo screening
+      - "results-lista/**"
+      - "results-svolta/**"
+      - "schede_fatte.txt"
 
 permissions:
   contents: write
@@ -118,7 +122,8 @@ jobs:
   merge:
     needs: shard
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 45 dal 08/11/2026 (era 30): in più la lista da radiografare e le stime EODHD
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -162,12 +167,47 @@ jobs:
           MODE: merge
         run: python svolta_screener.py
 
+      # Lista unica "da radiografare" (dal 08/11/2026): legge i latest.json di
+      # tutti gli screener, quindi gira dopo di loro. Non deve bloccare il commit.
+      - name: Build radiography list
+        continue-on-error: true
+        timeout-minutes: 5
+        run: python lista_radiografare.py
+
+      # Fotografia delle stime degli analisti da EODHD (dal 08/11/2026): un quinto
+      # dell'universo a rotazione più il recupero dei titoli con la fotografia più
+      # vecchia, coi crediti che avanzano; solo valori derivati (licenza: repo pubblico).
+      - name: Download universe (EODHD snapshot)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: universe
+
+      - name: Snapshot analyst estimates (EODHD)
+        continue-on-error: true
+        timeout-minutes: 20
+        env:
+          EODHD_API_TOKEN: ${{ secrets.EODHD_API_TOKEN }}
+          UNIVERSE_FILE: universe.json
+          EODHD_CAP_CREDITI: "25000"
+          # crediti pagati ogni giorno: si lascia solo un piccolo margine (era 20000)
+          EODHD_RESIDUO_MIN: "5000"
+          EODHD_TEMPO_MAX_S: "900"
+        run: python snapshot_stime_eodhd.py
+
       - name: Commit results
         run: |
           git config user.name "garp-bot"
           git config user.email "actions@github.com"
-          git pull --rebase origin main || true
           git add results/ results-moonshot/ results-temi/ snapshots/
           git add results-svolta/ 2>/dev/null || true
+          git add results-lista/ 2>/dev/null || true
           git diff --cached --quiet || git commit -m "Screening GARP+Moonshot+Temi $(date -u +%F)"
-          git push
+          # dal 08/11/2026: prima si fa il commit, poi si riallinea a main e si spinge,
+          # con 4 tentativi: se main cambia durante il job i risultati non vanno persi
+          for i in 1 2 3 4; do
+            git pull --rebase origin main && git push && exit 0
+            git rebase --abort 2>/dev/null || true
+            sleep $((i * 10))
+          done
+          echo "Push dei risultati fallito dopo 4 tentativi" && exit 1

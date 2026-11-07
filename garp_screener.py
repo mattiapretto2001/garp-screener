@@ -66,6 +66,14 @@ CRITERIA = {
     "radar_a_azioni_max": 0.10,    # azioni in circolazione al massimo +10% in un anno       # sotto questa soglia la fascia e' "classica" (il GARP storico)
     "fcf_min": 0.0,
     "min_market_cap": 0,           # nessun filtro dimensionale: universo massimo
+    # 08/11/2026, guardia minima di sicurezza (REPORT_punteggi_profili_2026-11-07):
+    # fuori da passed, radar A e radar B chi ha azioni +25% in un anno o prezzo
+    # sotto il 40% del massimo a 52 settimane (finiscono in esclusi_sicurezza)
+    "sicurezza_diluizione_max": 0.25,
+    "sicurezza_pct_max52_min": 0.40,
+    # stime mancate: con almeno 3 delle ultime 4 trimestrali sotto le stime il
+    # titolo resta in passed ma non entra in top 30 né in core
+    "stime_mancate_min": 3,
 }
 
 MAX_WORKERS = 8
@@ -550,6 +558,176 @@ def shares_change_1y(tk):
     return None
 
 
+def missed_estimates(eh):
+    """Trimestrali sotto le stime fra le ultime 4 (08/11/2026). Il segno è
+    utile effettivo meno stima (se Yahoo li dà), altrimenti surprisePercent:
+    così una perdita minore del previsto conta come stima battuta.
+    Ritorna {stime_mancate_4t, sorprese_4t_n}, None se non c'è storico."""
+    out = {"stime_mancate_4t": None, "sorprese_4t_n": None}
+    try:
+        if eh is None or getattr(eh, "empty", True):
+            return out
+        eh = eh.sort_index()
+        if {"epsActual", "epsEstimate"} <= set(eh.columns):
+            diff = (eh["epsActual"] - eh["epsEstimate"]).dropna()
+        elif "surprisePercent" in eh.columns:
+            diff = eh["surprisePercent"].dropna()
+        else:
+            return out
+        last4 = diff.tail(4)
+        if len(last4):
+            out["stime_mancate_4t"] = int((last4 < 0).sum())
+            out["sorprese_4t_n"] = int(len(last4))
+    except Exception:
+        pass
+    return out
+
+
+def _numero(x):
+    """True se x è un numero vero (non None, non NaN, non booleano)."""
+    return (isinstance(x, (int, float)) and not isinstance(x, bool)
+            and not math.isnan(x))
+
+
+def pct_max_52s_da_storico(tk):
+    """Prezzo / massimo a 52 settimane ricalcolato dallo storico prezzi di un
+    anno, rettificato per i frazionamenti (08/11/2026). Il fiftyTwoWeekHigh di
+    Yahoo (.info) dopo un frazionamento resta per mesi sul prezzo vecchio:
+    FCIT.L (4:1 l'11/05/2026) ha massimo .info 1351 contro 356 rettificato,
+    quindi 0,24 invece di 0,92. Massimo = High più alto dell'anno, prezzo =
+    ultima chiusura, dalla stessa serie (stessa unità, es. GBp). Prezzi non
+    rettificati per i dividendi (auto_adjust=False), come il massimo di .info.
+    None se lo storico non c'è."""
+    try:
+        h, _ = fetch_with_retry(lambda: tk.history(period="1y", auto_adjust=False))
+        if h is None or "High" not in h or "Close" not in h:
+            return None
+        high = h["High"].dropna()
+        close = h["Close"].dropna()
+        if high.empty or close.empty:
+            return None
+        mx, last = float(high.max()), float(close.iloc[-1])
+        if not (mx > 0 and last > 0):
+            return None
+        return last / mx
+    except Exception:
+        return None
+
+
+def pct_max_52s_guardia(r):
+    """Prezzo/massimo usato dalla guardia e dal core: il valore verificato sullo
+    storico (`pct_max_52s_verificato`) se c'è, altrimenti `pct_max_52s`."""
+    v = r.get("pct_max_52s_verificato")
+    if _numero(v):
+        return v
+    v = r.get("pct_max_52s")
+    return v if _numero(v) else None
+
+
+def safety_reasons(r):
+    """Guardia minima di sicurezza (08/11/2026): motivi di esclusione.
+    - "diluizione": azioni in circolazione oltre +25% in un anno
+      (`variazione_azioni_1a`);
+    - "lontano_dal_massimo": prezzo sotto il 40% del massimo a 52 settimane
+      (`pct_max_52s_verificato` se c'è, altrimenti `pct_max_52s`).
+    Un dato mancante non esclude. Lista vuota = nessun motivo."""
+    motivi = []
+    dil = r.get("variazione_azioni_1a")
+    if _numero(dil) and dil > CRITERIA["sicurezza_diluizione_max"]:
+        motivi.append("diluizione")
+    pm = pct_max_52s_guardia(r)
+    if pm is not None and pm < CRITERIA["sicurezza_pct_max52_min"]:
+        motivi.append("lontano_dal_massimo")
+    return motivi
+
+
+# nomi dei due dati della guardia, come compaiono in sicurezza_dati_mancanti
+DATI_SICUREZZA = ("pct_max_52s", "variazione_azioni_1a")
+DATI_SICUREZZA_IT = {"pct_max_52s": "prezzo/massimo a 52 settimane",
+                     "variazione_azioni_1a": "variazione delle azioni in un anno"}
+
+
+def safety_missing(r):
+    """Dati della guardia che mancano (08/11/2026): sottoinsieme di
+    ["pct_max_52s", "variazione_azioni_1a"]. Il prezzo/massimo conta come
+    presente se c'è `pct_max_52s` o `pct_max_52s_verificato`."""
+    out = []
+    if pct_max_52s_guardia(r) is None:
+        out.append("pct_max_52s")
+    if not _numero(r.get("variazione_azioni_1a")):
+        out.append("variazione_azioni_1a")
+    return out
+
+
+def safety_missing_text(mancanti):
+    """'manca la variazione delle azioni in un anno' e simili, in italiano."""
+    nomi = [DATI_SICUREZZA_IT.get(k, k) for k in mancanti]
+    if not nomi:
+        return ""
+    if len(nomi) == 1:
+        return f"manca {nomi[0]}"
+    return "mancano " + " e ".join(nomi)
+
+
+def safety_flag(r, motivi):
+    """False se c'è un motivo di esclusione, True se almeno uno dei due dati
+    c'è e va bene, None se mancano entrambi (non verificabile). Se ne manca
+    uno solo lo dice `sicurezza_dati_mancanti`."""
+    if motivi:
+        return False
+    return None if len(safety_missing(r)) == len(DATI_SICUREZZA) else True
+
+
+def safety_note(r, motivi):
+    """Spiegazione in italiano dei motivi di esclusione."""
+    parti = []
+    if "diluizione" in motivi:
+        parti.append(f"azioni in circolazione +{r['variazione_azioni_1a'] * 100:.0f}% in un anno "
+                     f"(soglia +{CRITERIA['sicurezza_diluizione_max'] * 100:.0f}%)")
+    if "lontano_dal_massimo" in motivi:
+        testo = (f"prezzo al {pct_max_52s_guardia(r) * 100:.0f}% del massimo a 52 settimane "
+                 f"(soglia {CRITERIA['sicurezza_pct_max52_min'] * 100:.0f}%")
+        if _numero(r.get("pct_max_52s_verificato")):
+            testo += ", verificato sullo storico prezzi)"
+        elif "pct_max_52s_verificato" in r:
+            testo += "; massimo di Yahoo, storico prezzi non disponibile per la verifica)"
+        else:
+            testo += ")"
+        parti.append(testo)
+    return "; ".join(parti)
+
+
+def safety_fields(r):
+    """I campi della guardia per un titolo: sicurezza_ok, sicurezza_motivi,
+    sicurezza_nota, sicurezza_dati_mancanti."""
+    motivi = safety_reasons(r)
+    return {"sicurezza_ok": safety_flag(r, motivi), "sicurezza_motivi": motivi,
+            "sicurezza_nota": safety_note(r, motivi),
+            "sicurezza_dati_mancanti": safety_missing(r)}
+
+
+def apply_safety(rows, lista):
+    """Divide `rows` in (ammessi, esclusi) secondo la guardia di sicurezza.
+    Su ogni titolo scrive sicurezza_ok (True, False, oppure None se mancano sia
+    prezzo/massimo sia diluizione), sicurezza_motivi e sicurezza_dati_mancanti
+    (dati della guardia che mancano, anche uno solo); sugli esclusi anche
+    esclusa_sicurezza, sicurezza_nota e lista_origine."""
+    ammessi, esclusi = [], []
+    for r in rows:
+        motivi = safety_reasons(r)
+        r["sicurezza_ok"] = safety_flag(r, motivi)
+        r["sicurezza_motivi"] = motivi
+        r["sicurezza_dati_mancanti"] = safety_missing(r)
+        if motivi:
+            r["esclusa_sicurezza"] = True
+            r["sicurezza_nota"] = safety_note(r, motivi)
+            r["lista_origine"] = lista
+            esclusi.append(r)
+        else:
+            ammessi.append(r)
+    return ammessi, esclusi
+
+
 def estimate_metrics(tk, info):
     """Dalle stime degli analisti (eps_trend): crescita EPS attesa anno
     prossimo / anno corrente, PEG prospettico = P/E forward / crescita attesa
@@ -557,7 +735,8 @@ def estimate_metrics(tk, info):
     10/10/2026: il PEG trailing dello screener può essere falsato da poste
     una tantum (caso COCO) e le revisioni sono il segnale più predittivo."""
     out = {"crescita_eps_attesa": None, "peg_prospettico": None, "revisione_stime_90g": None,
-           "sorpresa_utili_ultimo": None, "sorpresa_utili_media4": None}
+           "sorpresa_utili_ultimo": None, "sorpresa_utili_media4": None,
+           "stime_mancate_4t": None, "sorprese_4t_n": None}
     try:
         # sorprese sugli utili (Yahoo ne conserva solo 4 trimestri: vanno salvate ora)
         eh = tk.earnings_history
@@ -566,6 +745,7 @@ def estimate_metrics(tk, info):
             if len(sp):
                 out["sorpresa_utili_ultimo"] = float(sp.iloc[-1])
                 out["sorpresa_utili_media4"] = float(sp.tail(4).mean())
+        out.update(missed_estimates(eh))
     except Exception:
         pass
     try:
@@ -599,12 +779,78 @@ def write_snapshot(screener, rows):
               "crescita_eps_attesa", "revisione_stime_90g", "sorpresa_utili_ultimo",
               "sorpresa_utili_media4", "fcf_yield", "score",
               "revenue_growth_qoq_yoy", "pct_of_52w_high", "criteri_nuovi",
-              "fascia_peg", "punteggio_garp", "top30", "core", "peg_sospetto", "pct_max_52s"]
+              "fascia_peg", "punteggio_garp", "top30", "core", "peg_sospetto", "pct_max_52s",
+              # 08/11/2026: guardia di sicurezza e stime mancate (vuote nel Moonshot)
+              "sicurezza_ok", "stime_mancate", "stime_mancate_4t", "variazione_azioni_1a",
+              # 08/11/2026: prezzo/massimo ricalcolato sullo storico (frazionamenti)
+              "pct_max_52s_verificato"]
     with open(os.path.join(folder, f"{today}.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
         for r in rows:
             w.writerow({**r, "date": today, "criteri_nuovi": ",".join(r.get("criteri_nuovi") or [])})
+
+
+SCORES_FIELDS = ["date", "ticker", "stato", "punteggio_garp", "core", "top30", "radar_a", "radar_b",
+                 "fascia_peg", "peg_sospetto", "stime_mancate", "stime_mancate_4t", "sorprese_4t_n",
+                 "riacquisti_netti", "sicurezza_ok", "sicurezza_motivi", "pct_max_52s",
+                 "variazione_azioni_1a", "n_check_falliti", "check_falliti",
+                 "pct_max_52s_verificato", "sicurezza_dati_mancanti"]
+
+
+def write_scores_snapshot(results, folder=os.path.join("snapshots", "punteggi")):
+    """Fotografia di ogni sera (dal 08/11/2026) dei valori DERIVATI per tutti i
+    titoli analizzati dal GARP senza errore: punteggio, liste (core, top 30,
+    radar), avvisi, guardia di sicurezza, prezzo/massimo e diluizione. Non
+    contiene dati grezzi: serve a verificare in futuro punteggio e guardia
+    sui dati di allora. File: snapshots/punteggi/<data>.csv.gz."""
+    import csv
+    import gzip
+    import io
+    today = date.today().isoformat()
+
+    def cell(v):
+        if v is None or (isinstance(v, float) and math.isnan(v)):
+            return ""
+        if isinstance(v, float):
+            return round(v, 4)
+        return v
+
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=SCORES_FIELDS, lineterminator="\n")
+    w.writeheader()
+    n = 0
+    for r in sorted((r for r in results if not r.get("error") and r.get("ticker")),
+                    key=lambda r: str(r["ticker"])):
+        falliti = [k for k, v in (r.get("checks") or {}).items() if not v]
+        if r.get("passed"):
+            stato = "passed"
+        elif r.get("esclusa_sicurezza") and r.get("lista_origine") == "garp":
+            stato = "esclusa_sicurezza"
+        elif len(falliti) == 1:
+            stato = "near_miss"
+        else:
+            stato = "bocciato"
+        motivi = r.get("sicurezza_motivi")
+        if motivi is None:
+            motivi = safety_reasons(r)
+        sic = safety_flag(r, motivi)
+        w.writerow({k: cell(r.get(k)) for k in SCORES_FIELDS} | {
+            "date": today, "ticker": r["ticker"], "stato": stato,
+            "radar_a": bool(r.get("radar_a")), "radar_b": bool(r.get("radar_b")),
+            "sicurezza_ok": "" if sic is None else sic,
+            "sicurezza_motivi": ",".join(motivi),
+            "sicurezza_dati_mancanti": ",".join(safety_missing(r)),
+            "n_check_falliti": len(falliti) if r.get("checks") else "",
+            "check_falliti": ",".join(falliti),
+        })
+        n += 1
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, f"{today}.csv.gz")
+    with open(path, "wb") as f:
+        f.write(gzip.compress(buf.getvalue().encode("utf-8"), mtime=0))
+    print(f"Fotografia punteggi: {n} titoli -> {path}")
+    return path
 
 
 def fcf_yield(fcf, mcap):
@@ -663,6 +909,14 @@ def write_universe_snapshot(results):
     path = os.path.join(folder, f"{date.today().isoformat()}.csv.gz")
     df.to_csv(path, index_label="ticker", compression="gzip")
     print(f"Fotografia universo: {len(df)} ticker -> {path}")
+
+
+def radar_b_candidate(checks, peg, mcap):
+    """Candidato al radar B: fermato SOLO dal PEG (PEG positivo), da 2 Mld$ in su.
+    Stessa regola che make_report applica ai near_miss."""
+    fails = [k for k, v in checks.items() if not v]
+    return (fails == ["peg_ok"] and peg is not None and peg > 0
+            and mcap is not None and mcap >= CRITERIA["core_mcap_min"])
 
 
 def screen_ticker(symbol, index_name):
@@ -757,10 +1011,28 @@ def screen_ticker(symbol, index_name):
                                              and dil is not None and dil < CRITERIA["radar_a_azioni_max"])
                 except Exception:
                     pass
+            # Radar B (fermati solo dal PEG): dal 08/11/2026 serve la variazione
+            # delle azioni per la guardia di sicurezza (un bilancio in più, pochi titoli)
+            if (radar_b_candidate(checks, peg, mcap)
+                    and result.get("variazione_azioni_1a") is None):
+                try:
+                    result["variazione_azioni_1a"] = shares_change_1y(tk)
+                except Exception:
+                    pass
 
         high = info.get("fiftyTwoWeekHigh")
         price = result.get("price")
         result["pct_max_52s"] = (float(price) / float(high)) if (price and high and high > 0) else None
+        # 08/11/2026: prima di escludere per la guardia un candidato (promosso,
+        # radar A o radar B) sotto il 40% del massimo, si ricalcola il massimo
+        # dallo storico prezzi rettificato per i frazionamenti (una chiamata in
+        # più, solo per questi pochi titoli). pct_max_52s resta il valore di .info.
+        result["pct_max_52s_verificato"] = None
+        pm = result["pct_max_52s"]
+        if (pm is not None and pm < CRITERIA["sicurezza_pct_max52_min"]
+                and (result.get("passed") or result.get("radar_a")
+                     or radar_b_candidate(checks, peg, mcap))):
+            result["pct_max_52s_verificato"] = pct_max_52s_da_storico(tk)
         return result
     except Exception as e:
         return error_result(symbol, index_name, e)
@@ -933,12 +1205,17 @@ TOP_N = 30   # nel backtest il portafoglio dei primi 30 per punteggio batte la l
 
 
 def add_score(passed):
-    """Aggiunge a ogni promosso: fascia_peg, punteggio_garp (0-100), top30."""
+    """Aggiunge a ogni promosso: fascia_peg, punteggio_garp (0-100), top30,
+    core, stime_mancate. Dal 08/11/2026 "stime_mancate" è solo un'etichetta: nel
+    backtest sul periodo pulito 2018-2026 togliere questi titoli da top 30 e core
+    peggiorava i risultati (core -3,3 punti l'anno), quindi non esclude nulla."""
     for r in passed:
         peg = r.get("peg")
         r["fascia_peg"] = ("classica" if peg is not None and peg < CRITERIA["peg_classico_max"]
                            else "allargata")
         r["peg_sospetto"] = peg is not None and peg < CRITERIA["peg_sospetto_sotto"]
+        n_mancate = r.get("stime_mancate_4t")
+        r["stime_mancate"] = n_mancate is not None and n_mancate >= CRITERIA["stime_mancate_min"]
     if not passed:
         return
 
@@ -956,17 +1233,43 @@ def add_score(passed):
     for pos, r in enumerate(sorted(grandi, key=lambda r: -r["punteggio_garp"])):
         r["top30"] = pos < TOP_N
     for r in passed:
-        pm = r.get("pct_max_52s")
+        # dal 08/11/2026 il valore verificato sullo storico, se c'è (frazionamenti)
+        pm = pct_max_52s_guardia(r)
         rg = r.get("revenue_growth_qoq_yoy")
         r["core"] = bool((r.get("market_cap") or 0) >= CRITERIA["core_mcap_min"]
                          and rg is not None and rg > CRITERIA["core_ricavi_trim_min"]
                          and pm is not None and pm >= CRITERIA["core_pct_max52_min"])
 
 
+def merge_excluded(gruppi):
+    """Unisce gli esclusi per sicurezza delle tre liste in UNA riga per titolo
+    (08/11/2026): un titolo in radar A e in radar B compariva due volte.
+    `gruppi` = [(lista, esclusi), ...] in ordine; `lista_origine` resta la
+    prima lista, `liste_origine` le elenca tutte (es. ["radar_a", "radar_b"])."""
+    out, per_ticker = [], {}
+    for lista, esclusi in gruppi:
+        for r in esclusi:
+            t = r.get("ticker")
+            if t in per_ticker:
+                prima = per_ticker[t]
+                if lista not in prima["liste_origine"]:
+                    prima["liste_origine"].append(lista)
+                continue
+            r["lista_origine"] = lista
+            r["liste_origine"] = [lista]
+            per_ticker[t] = r
+            out.append(r)
+    return out
+
+
 def make_report(results, universe_size, started):
     errors = sum(1 for r in results if r.get("error"))
 
-    passed = [r for r in results if r.get("passed")]
+    # Guardia di sicurezza (08/11/2026): chi la viola esce da passed e finisce
+    # in esclusi_sicurezza, con il motivo
+    passed, esclusi_garp = apply_safety([r for r in results if r.get("passed")], "garp")
+    for r in esclusi_garp:
+        r["passed"] = False
     add_score(passed)
     passed.sort(key=lambda r: -r["punteggio_garp"])
     # "Quasi": passano tutto tranne UN criterio (utile come watchlist)
@@ -988,8 +1291,23 @@ def make_report(results, universe_size, started):
                       and r.get("peg") is not None and r["peg"] > 0
                       and (r.get("market_cap") or 0) >= CRITERIA["core_mcap_min"]],
                      key=lambda r: r["peg"])
+    # stessa guardia di sicurezza sui due radar
+    radar_a, esclusi_a = apply_safety(radar_a, "radar_a")
+    for r in esclusi_a:
+        r["radar_a"] = False
+    radar_b, esclusi_b = apply_safety(radar_b, "radar_b")
     for r in radar_b:
         r["radar_b"] = True
+    esclusi_sicurezza = merge_excluded((("garp", esclusi_garp), ("radar_a", esclusi_a),
+                                        ("radar_b", esclusi_b)))
+    stime_mancate = [r for r in passed if r.get("stime_mancate")]
+    # guardia non verificabile del tutto o in parte (dato mancante): restano in
+    # lista, ma va detto. Una riga per titolo, con le liste in cui compare.
+    non_verificabili = {}
+    for nome, gruppo in (("garp", passed), ("radar_a", radar_a), ("radar_b", radar_b)):
+        for r in gruppo:
+            if r.get("sicurezza_dati_mancanti"):
+                non_verificabili.setdefault(r["ticker"], (r, []))[1].append(nome)
 
     today = date.today().isoformat()
 
@@ -1024,6 +1342,23 @@ def make_report(results, universe_size, started):
         "radar_b_count": len(radar_b),
         "radar_b": radar_b[:60],
         "nota_radar": "Radar A (iper-crescita) e Radar B (esclusi solo dal PEG): liste da radiografare, non da comprare.",
+        # 08/11/2026: guardia di sicurezza e stime mancate
+        "regola_sicurezza": (f"Escluso da passed, radar A e radar B chi ha azioni in circolazione "
+                             f"oltre +{CRITERIA['sicurezza_diluizione_max'] * 100:.0f}% in un anno o "
+                             f"prezzo sotto il {CRITERIA['sicurezza_pct_max52_min'] * 100:.0f}% del "
+                             "massimo a 52 settimane (sotto soglia il massimo viene ricalcolato "
+                             "sullo storico prezzi, per i frazionamenti). Un dato mancante non "
+                             "esclude: lo dice sicurezza_dati_mancanti."),
+        "esclusi_sicurezza_count": len(esclusi_sicurezza),
+        "esclusi_sicurezza": esclusi_sicurezza,
+        "regola_stime_mancate": (f"Con almeno {CRITERIA['stime_mancate_min']} delle ultime 4 "
+                                 "trimestrali sotto le stime il titolo riceve l'etichetta "
+                                 "stime_mancate: è solo un avviso, non esclude da top 30 né da core "
+                                 "(backtest 2018-2026: escluderli peggiorava i risultati)."),
+        "con_stime_mancate_count": len(stime_mancate),
+        "con_stime_mancate": [r["ticker"] for r in stime_mancate],
+        "sicurezza_non_verificabile_count": len(non_verificabili),
+        "sicurezza_non_verificabile": list(non_verificabili),
         "new_today": [r["ticker"] for r in new_today],
         "dropped_since_yesterday": dropped,
         "passed": passed,
@@ -1038,7 +1373,12 @@ def make_report(results, universe_size, started):
     with open(latest_path, "w") as f:
         json.dump(report, f, indent=1, default=str)
     write_snapshot("garp", [dict(r, stato="passed") for r in passed]
-                   + [dict(r, stato="near_miss") for r in near_miss])
+                   + [dict(r, stato="near_miss") for r in near_miss]
+                   + [dict(r, stato="esclusa_sicurezza") for r in esclusi_garp])
+    try:
+        write_scores_snapshot(results)
+    except Exception as e:  # la fotografia non deve mai bloccare il report
+        print(f"[WARN] fotografia punteggi non scritta: {e}", file=sys.stderr)
 
     # Riepilogo leggibile in Markdown
     def fmt_pct(x):
@@ -1085,6 +1425,26 @@ def make_report(results, universe_size, started):
     lines += [f"- {short(r)}" for r in radar_a[:40]] or ["- nessuno"]
     lines += ["", f"## Radar B, esclusi solo dal PEG ({len(radar_b)}): da radiografare, non da comprare", ""]
     lines += [f"- {short(r)}" for r in radar_b[:40]] or ["- nessuno"]
+    nomi_lista = {"garp": "GARP", "radar_a": "Radar A", "radar_b": "Radar B"}
+
+    def da(liste):
+        return " e ".join(nomi_lista.get(x, "?") for x in liste) or "?"
+    lines += ["", f"## Esclusi per sicurezza ({len(esclusi_sicurezza)}): azioni oltre +"
+              f"{CRITERIA['sicurezza_diluizione_max'] * 100:.0f}% in un anno o prezzo sotto il "
+              f"{CRITERIA['sicurezza_pct_max52_min'] * 100:.0f}% del massimo a 52 settimane", ""]
+    lines += [f"- {r['ticker']} ({(r.get('name') or '')[:28]}; da "
+              f"{da(r.get('liste_origine') or [r.get('lista_origine')])}): {r.get('sicurezza_nota')}"
+              for r in esclusi_sicurezza] or ["- nessuno"]
+    lines += ["", f"## Sicurezza non verificabile ({len(non_verificabili)}): manca un dato della "
+              "guardia; il titolo resta in lista, da controllare a mano", ""]
+    lines += [f"- {t} ({(r.get('name') or '')[:28]}; {da(liste)}): "
+              f"{safety_missing_text(r.get('sicurezza_dati_mancanti'))}"
+              for t, (r, liste) in non_verificabili.items()] or ["- nessuno"]
+    lines += ["", f"## Stime mancate ({len(stime_mancate)}): almeno {CRITERIA['stime_mancate_min']} delle"
+              " ultime 4 trimestrali sotto le stime; solo un avviso, restano in top 30 e core se ci rientrano", ""]
+    lines += [f"- {r['ticker']} ({(r.get('name') or '')[:28]}; {r.get('stime_mancate_4t')} su "
+              f"{r.get('sorprese_4t_n')}) | punteggio {r.get('punteggio_garp')}"
+              for r in stime_mancate] or ["- nessuno"]
     with open(os.path.join(RESULTS_DIR, "latest.md"), "w") as f:
         f.write("\n".join(lines) + "\n")
 
