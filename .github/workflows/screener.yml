@@ -126,8 +126,12 @@ jobs:
     needs: shard
     runs-on: ubuntu-latest
     # 45 dal 08/11/2026 (era 30): in più la lista da radiografare e le stime EODHD;
-    # 60 dal 08/11/2026 (2): in più la Qualità durevole (bilanci EODHD)
-    timeout-minutes: 60
+    # 60 dal 08/11/2026 (2): in più la Qualità durevole (bilanci EODHD);
+    # 90 dalla revisione del 08/11/2026: i passi con continue-on-error hanno il loro
+    # tempo massimo (Temi 12, Svolta 5, Qualità 20, lista 5, stime 20 = 62 minuti);
+    # con 60 il job poteva scadere prima del commit. Restano circa 28 minuti per
+    # installazione, merge di GARP e Moonshot e commit (di solito 2-3 minuti).
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -173,8 +177,9 @@ jobs:
 
       # Qualità durevole (dal 08/11/2026, regola Q3 del backtest): primo filtro
       # sulla cache .info del GARP (partials/info-*.json), bilanci EODHD solo per
-      # i candidati (cap. >= 5 Mld$, ROE > 15%, settore ammesso), con una cache
-      # dei soli valori derivati (licenza: repo pubblico). Gira prima della lista.
+      # i candidati (cap. >= 5 Mld$, settore ammesso, ROE > 15% o margine lordo
+      # > 50%), con una cache dei soli valori derivati (licenza: repo pubblico).
+      # Gira prima della lista.
       - name: Run Qualita screener (EODHD)
         continue-on-error: true
         timeout-minutes: 20

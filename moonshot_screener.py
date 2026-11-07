@@ -16,7 +16,9 @@ piccole +6,5, medie +5,3, grandi +9,6 punti l'anno):
   - media   2-15 Mld$
   - grande  oltre 15 Mld$
 Capitalizzazione e ricavi sono convertiti in dollari con cambi indicativi
-(FX_USD; prima erano confrontati nella valuta di quotazione).
+(FX_USD; prima erano confrontati nella valuta di quotazione). La
+capitalizzazione è nella valuta di quotazione (currency), i ricavi in quella
+di bilancio (financialCurrency; se manca, quella di quotazione).
 
 FILTRI OBBLIGATORI (tutti):
   - Market cap da 150 M$ in su (nessun tetto dal 08/11/2026; era 150 M$ - 15 B$)
@@ -269,8 +271,14 @@ def screen_ticker(symbol, index_name):
 
         pct_high = (price / high52) if price and high52 else None
         currency = info.get("currency")
+        # Revisione 08/11/2026: Yahoo dà i ricavi nella valuta di BILANCIO
+        # (financialCurrency), la capitalizzazione in quella di quotazione.
+        # Troax (TROAX.ST) quota in corone ma pubblica in euro; molte ADR
+        # quotano in dollari e pubblicano in CNY, INR, CAD... Se la valuta di
+        # bilancio manca (cache vecchia) si usa quella di quotazione, come prima.
+        fin_currency = info.get("financialCurrency") or currency
         mcap_usd = in_usd(mcap, currency)
-        rev_usd = in_usd(rev_ttm, currency)
+        rev_usd = in_usd(rev_ttm, fin_currency)
         fascia = fascia_dimensione(mcap_usd)
         alto_rischio, rischio_motivo = rischio_fascia(fascia, info.get("country"), index_name)
         runway = None
@@ -339,6 +347,9 @@ def screen_ticker(symbol, index_name):
             "alto_rischio": alto_rischio,
             "alto_rischio_motivo": rischio_motivo,
             "revenue_ttm": rev_ttm,
+            # revisione 08/11/2026: valuta dei ricavi e ricavi in dollari
+            "financial_currency": fin_currency,
+            "revenue_ttm_usd": rev_usd,
             "revenue_growth_qoq_yoy": rev_g,
             "gross_margin": gm,
             "price": price,

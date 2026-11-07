@@ -38,11 +38,16 @@ Dati:
     se mancano, l'ultima fotografia snapshots/universo/*.csv.gz): settore,
     industria, capitalizzazione, ROE 12 mesi, PEG, prezzo.
   - EODHD, solo per i candidati del primo filtro (capitalizzazione >= 5 Mld$,
-    ROE Yahoo oltre 15%, settore ammesso; circa 600 società): bilanci annuali
-    e trimestrali, 10 crediti a società. Yahoo dà solo 4 bilanci annuali, Q3
-    ne vuole 6. Le doppie quotazioni con lo stesso nome si scaricano una volta.
-    Il primo filtro sul ROE serve solo a risparmiare crediti: può perdere
-    qualche società che passerebbe solo con i margini (Q2).
+    settore ammesso, ROE Yahoo oltre 15% OPPURE margine lordo Yahoo oltre il
+    50%; circa 800 società): bilanci annuali e trimestrali, 10 crediti a
+    società. Yahoo dà solo 4 bilanci annuali, Q3 ne vuole 6. Le doppie
+    quotazioni con lo stesso nome si scaricano una volta.
+    Il primo filtro serve solo a risparmiare crediti. Con il solo ROE perdeva
+    circa l'8-9% delle società Q3, quelle che passano con i margini (Q2) e
+    hanno il ROE di Yahoo appena sotto il 15% (Veeva, Richemont, Descartes,
+    Birkenstock): dalla revisione del 08/11/2026 entra anche chi ha il margine
+    lordo oltre il 50% (se Yahoo lo dà). Circa 215 società in più, circa
+    2.200 crediti in più la prima notte e circa 430 a notte poi.
 
 LICENZA: il repository è pubblico e il piano EODHD non permette di
 ridistribuire i dati grezzi. Dai bilanci EODHD si salvano SOLO valori derivati
@@ -104,6 +109,9 @@ MAX_WORKERS = 4
 CRITERIA = {
     "mcap_min_usd": 5e9,
     "prefiltro_roe_min": 0.15,        # ROE 12 mesi di Yahoo: solo per risparmiare crediti
+    # revisione 08/11/2026: in alternativa al ROE, margine lordo 12 mesi di Yahoo
+    # (recupera le società Q2 con il ROE appena sotto il 15%)
+    "prefiltro_margine_lordo_min": 0.50,
     "ricavi_cagr5_min": 0.08,
     "anni_in_calo_max": 1,
     "debito_netto_utile_operativo_max": 2.5,
@@ -147,7 +155,7 @@ BORSE = {**sse.BORSE, "HK": "HK", "VI": "VI", "LS": "LS", "IR": "IR"}
 
 ESITI_DA_TENERE = {"ok", "non_trovato", "senza_bilanci", "storico_corto", "bilancio_vecchio"}
 CAMPI_TESTO = {"ticker", "date", "index", "sector", "industry", "country", "currency",
-               "longName", "shortName", "quoteType"}
+               "longName", "shortName", "quoteType", "financialCurrency"}
 
 
 # ----------------------------- utilità -----------------------------
@@ -270,14 +278,19 @@ def settore_ammesso(info, eccezione=True):
     return False, None
 
 
-def primo_filtro(info_all, eccezione=True, roe_min=None, solo=None, scartati=None):
+def primo_filtro(info_all, eccezione=True, roe_min=None, solo=None, scartati=None,
+                 gm_min=None):
     """Candidati da scaricare: azioni, settore ammesso, capitalizzazione >= 5
-    Mld$, ROE Yahoo oltre la soglia. solo = insieme di ticker (prove locali).
-    scartati = dizionario da riempire con il motivo di ogni scarto.
-    Ritorna (candidati, contatori)."""
+    Mld$, ROE Yahoo oltre la soglia OPPURE margine lordo Yahoo oltre la sua
+    soglia (dalla revisione del 08/11/2026; solo se Yahoo dà grossMargins).
+    solo = insieme di ticker (prove locali). scartati = dizionario da riempire
+    con il motivo di ogni scarto. Ritorna (candidati, contatori): "roe" conta
+    gli scartati da questa regola (né ROE né margine lordo sopra soglia),
+    "solo_margine_lordo" i candidati entrati soltanto per il margine lordo."""
     roe_min = CRITERIA["prefiltro_roe_min"] if roe_min is None else roe_min
+    gm_min = CRITERIA["prefiltro_margine_lordo_min"] if gm_min is None else gm_min
     cont = {"universo": len(info_all), "non_azioni": 0, "settore": 0, "capitalizzazione": 0,
-            "roe": 0}
+            "roe": 0, "solo_margine_lordo": 0}
     scartati = {} if scartati is None else scartati
     out = []
     for t, info in info_all.items():
@@ -302,11 +315,19 @@ def primo_filtro(info_all, eccezione=True, roe_min=None, solo=None, scartati=Non
                            f"capitalizzazione {mcap_usd / 1e9:.1f} Mld$, sotto 5".replace(".", ","))
             continue
         roe = num(info.get("returnOnEquity"))
-        if roe is None or roe <= roe_min:
+        gm = num(info.get("grossMargins"))
+        roe_ok = roe is not None and roe > roe_min
+        gm_ok = gm is not None and gm > gm_min
+        if not (roe_ok or gm_ok):
             cont["roe"] += 1
-            scartati[t] = ("ROE Yahoo non calcolabile (patrimonio negativo o dato mancante)"
-                           if roe is None else f"ROE Yahoo {roe * 100:.0f}%, non oltre 15%")
+            scartati[t] = (("ROE Yahoo non calcolabile (patrimonio negativo o dato mancante)"
+                            if roe is None else f"ROE Yahoo {roe * 100:.0f}%, non oltre "
+                            f"{roe_min * 100:.0f}%")
+                           + (", margine lordo non noto" if gm is None else
+                              f", margine lordo {gm * 100:.0f}%, non oltre {gm_min * 100:.0f}%"))
             continue
+        if not roe_ok:
+            cont["solo_margine_lordo"] += 1
         out.append({"ticker": t, "info": info, "mcap_usd": mcap_usd, "eccezione_settore": ecc})
     cont["candidati"] = len(out)
     return out, cont
@@ -822,8 +843,9 @@ def scrivi_report(righe, senza_dati, cont, riep, fonte, out_dir, oggi, started,
     if riep.get("interrotto"):
         L += [f"> ⚠️ Download EODHD interrotto: {riep['interrotto']}. Per le società senza "
               "dati recenti l'esito resta quello dell'ultimo download (o manca).", ""]
-    L += [f"Candidate dopo il primo filtro (cap. ≥ 5 Mld$, ROE Yahoo > 15%, settore ammesso): "
-          f"{cont.get('candidati', 0)} | Società valutate: {len(righe)} | "
+    L += [f"Candidate dopo il primo filtro (cap. ≥ 5 Mld$, settore ammesso, ROE Yahoo > 15% "
+          f"o margine lordo > 50%): {cont.get('candidati', 0)} (solo per il margine lordo: "
+          f"{cont.get('solo_margine_lordo', 0)}) | Società valutate: {len(righe)} | "
           f"**In lista: {len(passed)}** (Q1 {report['q1_count']}, Q2 {report['q2_count']}) | "
           f"Nuove: {', '.join(report['new_today']) or '—'} | "
           f"Uscite: {', '.join(report['dropped_since_yesterday']) or '—'} | "
@@ -862,9 +884,10 @@ def scrivi_report(righe, senza_dati, cont, riep, fonte, out_dir, oggi, started,
           f"{riep.get('riserva')}). Fonte dati Yahoo: {fonte}.",
           "", "Punteggio: solo per ordinare (0-6), non provato nel backtest. Bilanci "
           "pubblicati (non i dati \"rettificati\" delle società): chi ha patrimonio negativo "
-          "per i riacquisti di azioni (Moody's, AutoZone) resta fuori. Il primo filtro sul ROE "
-          "di Yahoo serve a risparmiare crediti e può perdere qualche società che passerebbe "
-          "solo con i margini (Q2)."]
+          "per i riacquisti di azioni (Moody's, AutoZone) resta fuori. Il primo filtro (ROE di "
+          "Yahoo oltre il 15% o margine lordo oltre il 50%) serve a risparmiare crediti e può "
+          "perdere qualche società che passerebbe solo con i margini (Q2) con margine lordo "
+          "fino al 50%."]
     with open(os.path.join(out_dir, "latest.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(L) + "\n")
     return report

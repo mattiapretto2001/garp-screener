@@ -20,7 +20,7 @@ I Temi danno solo un'etichetta (nessun vantaggio dimostrato).
 Trade Republic (dal 08/11/2026): ogni riga ha acquistabile_tr ("probabile",
 "incerto", "probabilmente no"; "n.d." se il file manca, è vuoto o non si
 legge). Ticker assente dal file = "incerto". Fra i 5 della settimana vengono
-prima i "probabile".
+prima i "probabile" (vedi sotto).
 
 Ordine: prima il core GARP, poi i titoli in 2 o più famiglie (più famiglie
 prima), poi il punteggio medio come spareggio (percentile del titolo dentro
@@ -33,9 +33,17 @@ vengono solo dalla Qualità la diluizione è un sì/no calcolato dai bilanci
 EODHD (diluizione_oltre_soglia), perché la licenza non permette di pubblicare
 la variazione in numeri.
 
-"settimana": i primi 5 titoli della lista non ancora radiografati
-(schede_fatte.txt nella radice del repo, un ticker per riga), prima quelli
-"probabile" su Trade Republic, poi gli altri nell'ordine della lista.
+"settimana": 5 titoli della lista non ancora radiografati (schede_fatte.txt
+nella radice del repo, un ticker per riga), scelti così (revisione 08/11/2026):
+  1) prima quelli "probabile" su Trade Republic, poi gli altri;
+  2) poi la priorità della lista (core GARP, poi 2 o più famiglie, più
+     famiglie prima);
+  3) a pari priorità il tipo: core > Crescita media/grande > Qualità > altri
+     (GARP top 30 non core, Radar B, Svolta) > Crescita piccola;
+  4) poi il punteggio medio;
+  e al massimo 1 titolo ad alto rischio (Crescita piccola) a settimana. Se non
+  ci sono abbastanza titoli senza alto rischio, la settimana ne ha meno di 5.
+L'ordine della lista (e "posizione") non cambia.
 
 Basi dal backtest (REPORT_screener_tutti_2026-11-07): i titoli presi da 2 o
 più famiglie hanno fatto +10,2 punti l'anno sull'universo (t 2,7), quelli
@@ -86,6 +94,12 @@ TR_VALORI = ("probabile", "incerto", "probabilmente no")
 TR_ND = "n.d."
 TR_ASSENTE = "incerto"     # ticker non presente nel file
 SEMAFORI_TEMA = ("verde", "giallo")
+
+# 5 della settimana (revisione 08/11/2026): al massimo 1 titolo ad alto rischio
+# (Crescita piccola) e, a pari priorità della lista, quest'ordine dei tipi.
+# "altri" = GARP top 30 non core, Radar B, Svolta.
+MAX_ALTO_RISCHIO_SETTIMANA = 1
+TIPI_SETTIMANA = ("core", "Crescita media/grande", "Qualità", "altri", "Crescita piccola")
 
 # guardia di sicurezza (stessi valori di garp_screener.CRITERIA; se il report
 # GARP li contiene, valgono quelli del report)
@@ -211,6 +225,8 @@ class Accumulatore:
                 # sì/no dalla Qualità (azioni oltre +25% in un anno, bilanci
                 # EODHD): vale solo se manca "diluizione"
                 "diluizione_oltre_soglia": None,
+                # revisione 08/11/2026: tipo usato per scegliere i 5 della settimana
+                "tipo_settimana": None,
             }
         return self.righe[t]
 
@@ -509,6 +525,46 @@ def chiave_ordine(r):
             r["ticker"])
 
 
+def tipo_settimana(r):
+    """Tipo della riga per la scelta della settimana (TIPI_SETTIMANA). L'alto
+    rischio (Crescita piccola) vale anche se la riga ha altre famiglie. Radar A
+    senza Moonshot è Crescita media/grande (il radar parte da 2 Mld$)."""
+    if r["core"]:
+        return "core"
+    if r.get("alto_rischio"):
+        return "Crescita piccola"
+    if "Crescita" in r["famiglie"]:
+        return "Crescita media/grande"
+    if "Qualità" in r["famiglie"]:
+        return "Qualità"
+    return "altri"
+
+
+def chiave_settimana(r):
+    """1) "probabile" su Trade Republic; 2) priorità della lista (core, poi 2 o
+    più famiglie, più famiglie prima); 3) tipo (TIPI_SETTIMANA); 4) punteggio
+    medio."""
+    return (r["acquistabile_tr"] != "probabile", not r["core"], r["n_famiglie"] < 2,
+            -r["n_famiglie"], TIPI_SETTIMANA.index(tipo_settimana(r)),
+            -(r["punteggio_medio"] if r["punteggio_medio"] is not None else -1),
+            r["ticker"])
+
+
+def scegli_settimana(lista, n_settimana=N_SETTIMANA, max_alto_rischio=MAX_ALTO_RISCHIO_SETTIMANA):
+    """Righe della settimana fra quelle non ancora radiografate, nell'ordine di
+    chiave_settimana, con al massimo max_alto_rischio righe ad alto rischio."""
+    scelti, n_rischio = [], 0
+    for r in sorted((r for r in lista if not r["gia_radiografato"]), key=chiave_settimana):
+        if len(scelti) >= n_settimana:
+            break
+        if r.get("alto_rischio"):
+            if n_rischio >= max_alto_rischio:
+                continue
+            n_rischio += 1
+        scelti.append(r)
+    return scelti
+
+
 def costruisci_lista(reports, schede_fatte=frozenset(), n_settimana=N_SETTIMANA, disp_tr=None):
     """Funzione pura: dai report degli screener (dizionari, o None se mancanti)
     alla lista unificata. disp_tr = disponibilità su Trade Republic
@@ -543,18 +599,17 @@ def costruisci_lista(reports, schede_fatte=frozenset(), n_settimana=N_SETTIMANA,
         r["gia_radiografato"] = bool({r["ticker"], *r["altri_ticker"]} & fatte)
         applica_tr(r, disp_tr)
         valuta_sicurezza(r, soglie)
+        r["tipo_settimana"] = tipo_settimana(r)
         (esclusi if r["sicurezza_ok"] is False else lista).append(r)
 
     lista.sort(key=chiave_ordine)
     esclusi.sort(key=chiave_ordine)
     for i, r in enumerate(lista, 1):
         r["posizione"] = i
-    # 08/11/2026: prima i "probabile" su Trade Republic, poi gli altri
-    liberi = [r for r in lista if not r["gia_radiografato"]]
-    scelti = ([r for r in liberi if r["acquistabile_tr"] == "probabile"]
-              + [r for r in liberi if r["acquistabile_tr"] != "probabile"])[:n_settimana]
+    # 08/11/2026: prima i "probabile" su Trade Republic, poi gli altri;
+    # revisione 08/11/2026: tipi a pari priorità e al massimo 1 ad alto rischio
     settimana = []
-    for r in scelti:
+    for r in scegli_settimana(lista, n_settimana):
         r["settimana"] = True
         settimana.append(r["ticker"])
     return lista, esclusi, settimana
@@ -622,9 +677,17 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
                             "verificato sullo storico prezzi (frazionamenti). Dato mancante: "
                             "resta, con l'elenco in sicurezza_dati_mancanti (sicurezza_ok null "
                             "se mancano entrambi).",
-        "regola_settimana": f"I primi {N_SETTIMANA} della lista non ancora radiografati "
+        "regola_settimana": f"{N_SETTIMANA} titoli della lista non ancora radiografati "
                             f"({SCHEDE_FATTE}): prima quelli \"probabile\" su Trade Republic, "
-                            "poi gli altri nell'ordine della lista.",
+                            "poi gli altri; poi la priorità della lista (core GARP, poi 2 o più "
+                            "famiglie, più famiglie prima); a pari priorità il tipo "
+                            "(tipo_settimana): " + " > ".join(TIPI_SETTIMANA) + " (altri = "
+                            "GARP top 30 non core, Radar B, Svolta); poi il punteggio medio. Al "
+                            f"massimo {MAX_ALTO_RISCHIO_SETTIMANA} titolo ad alto rischio "
+                            "(Crescita piccola) a settimana: se mancano titoli senza alto rischio "
+                            "la settimana ne ha meno di 5.",
+        "settimana_max_alto_rischio": MAX_ALTO_RISCHIO_SETTIMANA,
+        "settimana_ordine_tipi": list(TIPI_SETTIMANA),
         "regola_tr": f"acquistabile_tr da {path_tr} (aggiorna_disponibilita_tr.py): "
                      "\"probabile\", \"incerto\", \"probabilmente no\"; per una società "
                      "con più ticker vale il migliore. Ticker assente dal file = \"incerto\"; "
@@ -674,7 +737,10 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
           f"Già radiografati (in {SCHEDE_FATTE}): {len(fatte)}",
           "Per famiglia: " + ", ".join(f"{k} {v}" for k, v in conteggi.items()),
           "Trade Republic: " + ", ".join(f"{k} {v}" for k, v in conteggi_tr.items() if v), "",
-          f"## Questa settimana ({len(settimana)})", ""]
+          f"## Questa settimana ({len(settimana)})", "",
+          "Scelta: prima i \"probabile\" su Trade Republic; poi core, poi 2+ famiglie; a pari "
+          "priorità " + " > ".join(TIPI_SETTIMANA) + f"; al massimo {MAX_ALTO_RISCHIO_SETTIMANA} "
+          "ad alto rischio.", ""]
     per_t = {r["ticker"]: r for r in lista}
     L += [f"{i}. {riga_breve(per_t[t])}" for i, t in enumerate(settimana, 1)] or ["- nessuno"]
     L += ["", "## Lista completa", "",
@@ -713,7 +779,9 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
           "dentro ciascuna famiglia). Etichette: \"margine in svolta\" (Svolta), \"crescita "
           "piccola: alto rischio\" (Crescita sotto 2 Mld$), \"tema: …\" "
           "(Temi con semaforo verde o giallo: non testati, nessun vantaggio dimostrato, solo "
-          "etichetta). ⭐ = nei 5 della settimana (prima i \"probabile\" su Trade Republic). "
+          "etichetta). ⭐ = nei 5 della settimana (prima i \"probabile\" su Trade Republic; a "
+          "pari priorità core, Crescita media/grande, Qualità, altri, Crescita piccola; al "
+          f"massimo {MAX_ALTO_RISCHIO_SETTIMANA} ad alto rischio). "
           "Colonna TR: acquistabile su Trade Republic secondo "
           f"{path_tr} (deduzione, da controllare nell'app). Le società quotate su più "
           "borse con lo stesso nome sono unite in una riga (altri ticker nel JSON). Colonna "
