@@ -48,13 +48,19 @@ LICENZA: il repository è pubblico e il piano EODHD non permette di
 ridistribuire i dati grezzi. Dai bilanci EODHD si salvano SOLO valori derivati
 calcolati qui: esiti sì/no delle regole, numero di anni sopra soglia (0-5),
 punteggio e data di chiusura dell'ultimo bilancio annuale. Nessun importo né
-rapporto EODHD finisce nei file.
+rapporto EODHD finisce nei file. Anche la diluizione è solo un sì/no
+(azioni_oltre_25_1a: azioni in circolazione oltre +25% in un anno), per la
+guardia di sicurezza della lista da radiografare.
 
-Cache dei derivati (results-qualita/derivati_eodhd.json): una società si
-riscarica quando il dato ha almeno QUALITA_RINNOVO_GIORNI giorni (default 7;
-28 per i codici che EODHD non conosce). Prima le mai scaricate e le più
-vecchie, poi per capitalizzazione. Un dato con più di QUALITA_SCADENZA_GIORNI
-giorni (default 45) non si usa.
+Cache dei derivati (results-qualita/derivati_eodhd.json): ogni società ha un
+giorno feriale fisso di rinnovo (crc32 del ticker, modulo 5) e si riscarica
+quel giorno se il dato ha almeno QUALITA_RINNOVO_GIORNI - 4 giorni (default 7,
+quindi 3), oppure in qualunque giorno dopo QUALITA_RINNOVO_GIORNI + 2 giorni
+(turno saltato). Così ogni notte si rinnova circa un quinto delle società
+(circa 1.200 crediti) invece di tutte nella stessa notte (circa 5.800). La
+prima notte si scarica tutto. Codici che EODHD non conosce: dopo 28 giorni.
+Prima le mai scaricate e le più vecchie, poi per capitalizzazione. Un dato con
+più di QUALITA_SCADENZA_GIORNI giorni (default 45) non si usa.
 
 Crediti: tetto QUALITA_CAP_CREDITI (default 15.000) per notte; si ferma se i
 crediti rimasti nel giorno scendono sotto QUALITA_RESIDUO_MIN (default 5.000);
@@ -79,6 +85,7 @@ import os
 import sys
 import time
 import traceback
+import zlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timezone
 
@@ -108,7 +115,18 @@ CRITERIA = {
     "stabilita_margine_punti": 0.02,
     "margine_lordo_calo_max_punti": 0.02,
     "bilancio_annuale_eta_max_mesi": 15,
+    # solo per il sì/no azioni_oltre_25_1a (guardia della lista da radiografare)
+    "diluizione_1a_soglia": base.CRITERIA.get("sicurezza_diluizione_max", 0.25),
 }
+
+# rapporti fra le azioni di oggi e di un anno prima che sembrano un
+# frazionamento non corretto da EODHD (es. Amphenol 2:1 nel 2024): il sì/no
+# della diluizione resta "non noto" invece di segnare una falsa diluizione
+# (tolleranza 3%: in un anno si aggiungono riacquisti ed emissioni normali)
+RAPPORTI_FRAZIONAMENTO = (1.5, 2.0, 3.0, 4.0)
+TOLLERANZA_FRAZIONAMENTO = 0.03
+# giorni feriali dei turni di rinnovo della cache (lo screener gira lun-ven)
+GIORNI_TURNO = 5
 
 # Pagamenti e dati finanziari: riammessi nonostante il settore "Financial
 # Services" (prova del backtest scr_04c: effetto nullo sul passato)
@@ -401,6 +419,38 @@ def _ricavi(v):
     return num(v.get("totalRevenue"))
 
 
+def azioni_oltre_soglia(fin_b, oggi, soglia=None):
+    """Sì/no: azioni in circolazione (commonStockSharesOutstanding dello stato
+    patrimoniale EODHD, trimestrale e se manca annuale) cresciute oltre la
+    soglia (25%) in un anno. Ultimo dato contro il più recente fra 12 e 18
+    mesi prima, come nel backtest. None se mancano i dati, se l'ultimo ha più
+    di 15 mesi, o se il rapporto sembra un frazionamento (multiplo semplice) o
+    un errore di unità (oltre 4,5 volte o sotto un quinto)."""
+    soglia = CRITERIA["diluizione_1a_soglia"] if soglia is None else soglia
+    sh = {}
+    for tab in ("yearly", "quarterly"):      # il trimestrale vale più dell'annuale
+        for m, v in _righe((fin_b or {}).get(tab)).items():
+            x = num(v.get("commonStockSharesOutstanding"))
+            if x is not None and x > 0:
+                sh[m] = x
+    if not sh:
+        return None
+    m1 = max(sh)
+    if mese_indice(oggi.isoformat()) - m1 > CRITERIA["bilancio_annuale_eta_max_mesi"]:
+        return None
+    prima = [m for m in sh if m1 - 18 <= m <= m1 - 12]
+    if not prima:
+        return None
+    rapporto = sh[m1] / sh[max(prima)]
+    if rapporto > 4.5 or rapporto < 0.2:
+        return None
+    oltre = rapporto - 1 > soglia
+    if oltre and any(abs(rapporto / k - 1) <= TOLLERANZA_FRAZIONAMENTO
+                     for k in RAPPORTI_FRAZIONAMENTO):
+        return None
+    return oltre
+
+
 def derivati(dati, oggi=None):
     """Dai bilanci EODHD ai soli valori derivati (vedi docstring). Ritorna un
     dizionario con 'esito' e, se 'ok', gli esiti delle regole."""
@@ -510,6 +560,8 @@ def derivati(dati, oggi=None):
         "q1_bilanci": bool(base_ok and n_roe >= CRITERIA["anni_roe_min"] and stab),
         "q2_bilanci": bool(base_ok and n_mar >= CRITERIA["anni_margine_min"] and stab
                            and gm_st is not False),
+        # solo sì/no (licenza): per la guardia di sicurezza della lista
+        "azioni_oltre_25_1a": azioni_oltre_soglia(fin_b, oggi),
     })
     return out
 
@@ -532,6 +584,26 @@ def eta_giorni(voce, oggi):
         return 10 ** 6
 
 
+def turno(ticker):
+    """Giorno feriale del rinnovo (0 = lunedì … 4 = venerdì), fisso per ogni
+    società: i rinnovi si spargono sulla settimana."""
+    return zlib.crc32(str(ticker).encode("utf-8")) % GIORNI_TURNO
+
+
+def da_rinnovare(voce, ticker, oggi, rinnovo, rinnovo_non_trovato):
+    """True se il dato in cache va riscaricato stanotte (vedi docstring del
+    modulo): nel giorno del turno se ha almeno rinnovo - 4 giorni, in ogni
+    caso dopo rinnovo + 2 giorni (turno saltato)."""
+    eta = eta_giorni(voce, oggi)
+    if voce.get("esito") == "non_trovato":
+        return eta >= rinnovo_non_trovato
+    if rinnovo < 7:                 # rinnovo più frequente di una settimana: solo l'età
+        return eta >= rinnovo
+    if eta >= rinnovo + 2:
+        return True
+    return oggi.weekday() == turno(ticker) and eta >= rinnovo - 4
+
+
 def da_scaricare(gruppi, cache, oggi, rinnovo, rinnovo_non_trovato):
     """Società da (ri)scaricare, nell'ordine: mai scaricate, più vecchie,
     più grandi."""
@@ -543,10 +615,8 @@ def da_scaricare(gruppi, cache, oggi, rinnovo, rinnovo_non_trovato):
         if v is None or v.get("codice_eodhd") != g["codice_eodhd"]:
             out.append((0, -10 ** 6, -(g["mcap_usd"] or 0), g))
             continue
-        eta = eta_giorni(v, oggi)
-        soglia = rinnovo_non_trovato if v.get("esito") == "non_trovato" else rinnovo
-        if eta >= soglia:
-            out.append((1, -eta, -(g["mcap_usd"] or 0), g))
+        if da_rinnovare(v, g["ticker"], oggi, rinnovo, rinnovo_non_trovato):
+            out.append((1, -eta_giorni(v, oggi), -(g["mcap_usd"] or 0), g))
     out.sort(key=lambda x: x[:3])
     return [x[3] for x in out]
 
@@ -646,6 +716,8 @@ def valuta(g, der, eccezione=True):
         "peg_ok": peg_ok,
         "storico_5_anni": der.get("storico_5_anni"),
         "motivi_no": [] if (q1 or q2) else motivi,
+        # sì/no, non esclude qui: lo usa la guardia della lista da radiografare
+        "azioni_oltre_25_1a": der.get("azioni_oltre_25_1a"),
     }
 
 
@@ -717,7 +789,8 @@ def scrivi_report(righe, senza_dati, cont, riep, fonte, out_dir, oggi, started,
                          "margine >= 20% in tutti e 5, nessun anno di ricavi in calo, cassa "
                          "netta). Non è stato provato nel backtest.",
         "licenza": "Dai bilanci EODHD sono salvati solo valori derivati (esiti sì/no, anni "
-                   "sopra soglia, punteggio, data dell'ultimo bilancio): nessun importo.",
+                   "sopra soglia, punteggio, data dell'ultimo bilancio, sì/no azioni oltre "
+                   "+25% in un anno): nessun importo.",
         "fonte_info": fonte,
         "primo_filtro": cont,
         "societa_valutate": len(righe),
@@ -764,6 +837,8 @@ def scrivi_report(righe, senza_dati, cont, riep, fonte, out_dir, oggi, started,
             note.append(r["eccezione_settore"])
         if r["altri_ticker"]:
             note.append("anche " + ", ".join(r["altri_ticker"]))
+        if r.get("azioni_oltre_25_1a"):
+            note.append("⚠ azioni oltre +25% in un anno")
         L.append(f"| {i} | {r['ticker']} | {(r['name'] or '')[:30]} | {r['country'] or ''} | "
                  f"{_mld(r['market_cap_usd'])} | {'✓' if r['q1'] else '–'} | "
                  f"{'✓' if r['q2'] else '–'} | {r['punteggio']} | {r['anni_roe_15']}/5 | "
@@ -867,7 +942,8 @@ def main(argv=None):
                     try:
                         g, d = fut.result()
                     except Exception as e:
-                        print(f"[WARN] errore su un titolo: {e}", file=sys.stderr)
+                        print(f"[WARN] errore su un titolo ({type(e).__name__})",
+                              file=sys.stderr)
                         continue
                     riep["esiti"][d["esito"]] = riep["esiti"].get(d["esito"], 0) + 1
                     if d["esito"] in ESITI_DA_TENERE:

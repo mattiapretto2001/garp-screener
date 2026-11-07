@@ -18,8 +18,9 @@ società conta una volta anche se è in tutte e due), Qualità, Radar B, Svolta.
 I Temi danno solo un'etichetta (nessun vantaggio dimostrato).
 
 Trade Republic (dal 08/11/2026): ogni riga ha acquistabile_tr ("probabile",
-"incerto", "probabilmente no"; "n.d." se manca il file). Ticker assente dal
-file = "incerto". Fra i 5 della settimana vengono prima i "probabile".
+"incerto", "probabilmente no"; "n.d." se il file manca, è vuoto o non si
+legge). Ticker assente dal file = "incerto". Fra i 5 della settimana vengono
+prima i "probabile".
 
 Ordine: prima il core GARP, poi i titoli in 2 o più famiglie (più famiglie
 prima), poi il punteggio medio come spareggio (percentile del titolo dentro
@@ -27,7 +28,10 @@ ciascuna delle sue famiglie, in media).
 
 Guardia di sicurezza, uguale per tutti (REPORT_punteggi_profili_2026-11-07):
 chi ha prezzo sotto il 40% del massimo a 52 settimane o azioni oltre +25% in
-un anno esce dalla lista e finisce in esclusi_sicurezza.
+un anno esce dalla lista e finisce in esclusi_sicurezza. Per le righe che
+vengono solo dalla Qualità la diluizione è un sì/no calcolato dai bilanci
+EODHD (diluizione_oltre_soglia), perché la licenza non permette di pubblicare
+la variazione in numeri.
 
 "settimana": i primi 5 titoli della lista non ancora radiografati
 (schede_fatte.txt nella radice del repo, un ticker per riga), prima quelli
@@ -204,6 +208,9 @@ class Accumulatore:
                 # 08/11/2026
                 "crescita_fascia": None, "alto_rischio": False,
                 "acquistabile_tr": TR_ND, "isin": None, "isin_tr": None,
+                # sì/no dalla Qualità (azioni oltre +25% in un anno, bilanci
+                # EODHD): vale solo se manca "diluizione"
+                "diluizione_oltre_soglia": None,
             }
         return self.righe[t]
 
@@ -224,12 +231,19 @@ class Accumulatore:
         # Crescita viene da due segnali (Radar A, Moonshot): vale il migliore
         if punteggio is not None:
             r["punteggi"][fam] = max(r["punteggi"].get(fam, punteggio), punteggio)
+            # chiavi di prima del 08/11/2026 (Radar A, Moonshot): restano in
+            # punteggi col percentile del segnale; punteggio_medio usa solo le
+            # famiglie, quindi non cambia
+            if segnale in FAMIGLIE_VECCHIE and segnale not in r["punteggi"]:
+                r["punteggi"][segnale] = punteggio
 
-    def sicurezza(self, r, pct=None, pct_fonte=None, dil=None, dil_fonte=None):
+    def sicurezza(self, r, pct=None, pct_fonte=None, dil=None, dil_fonte=None, dil_oltre=None):
         if r["pct_max_52s"] is None and num(pct) is not None:
             r["pct_max_52s"], r["pct_max_52s_fonte"] = num(pct), pct_fonte
         if r["diluizione"] is None and num(dil) is not None:
             r["diluizione"], r["diluizione_fonte"] = num(dil), dil_fonte
+        if r["diluizione_oltre_soglia"] is None and isinstance(dil_oltre, bool):
+            r["diluizione_oltre_soglia"] = dil_oltre
 
 
 def aggiungi_garp(acc, rep):
@@ -317,7 +331,10 @@ def aggiungi_qualita(acc, rep):
                 acc.alias.setdefault(t, row["ticker"])
                 if t not in row["altri_ticker"]:
                     row["altri_ticker"].append(t)
-        acc.sicurezza(row, r.get("pct_of_52w_high"), "Qualità", None, None)
+        # la Qualità non pubblica la variazione delle azioni (licenza EODHD), solo
+        # il sì/no "azioni oltre +25% in un anno"
+        acc.sicurezza(row, r.get("pct_of_52w_high"), "Qualità", None, None,
+                      dil_oltre=r.get("azioni_oltre_25_1a"))
 
 
 def aggiungi_svolta(acc, rep):
@@ -394,7 +411,7 @@ def unisci_doppie_quotazioni(righe):
         a["alto_rischio"] = a.get("alto_rischio") or r.get("alto_rischio")
         for k2 in ("crescita_fascia", "punteggio_garp", "stime_mancate", "peg_sospetto", "pct_max_52s",
                    "pct_max_52s_fonte", "diluizione", "diluizione_fonte", "nome", "settore",
-                   "paese", "valuta", "market_cap", "prezzo"):
+                   "paese", "valuta", "market_cap", "prezzo", "diluizione_oltre_soglia"):
             if a.get(k2) is None and r.get(k2) is not None:
                 a[k2] = r[k2]
     return out
@@ -408,14 +425,19 @@ DATI_SICUREZZA_IT = {"pct_max_52s": "prezzo/massimo a 52 settimane",
 
 def valuta_sicurezza(r, soglie):
     motivi = []
-    if r["diluizione"] is not None and r["diluizione"] > soglie["sicurezza_diluizione_max"]:
+    # la variazione in numeri (GARP, Moonshot, Svolta, Temi) prima del sì/no
+    # della Qualità, che usa sempre la soglia del 25%
+    oltre = r.get("diluizione_oltre_soglia")
+    if r["diluizione"] is not None:
+        oltre = r["diluizione"] > soglie["sicurezza_diluizione_max"]
+    if oltre:
         motivi.append("diluizione")
     if r["pct_max_52s"] is not None and r["pct_max_52s"] < soglie["sicurezza_pct_max52_min"]:
         motivi.append("lontano_dal_massimo")
     r["sicurezza_motivi"] = motivi
     # dato mancante (anche uno solo dei due): non esclude, ma lo dice
     r["sicurezza_dati_mancanti"] = [k for k, v in (("pct_max_52s", r["pct_max_52s"]),
-                                                   ("variazione_azioni_1a", r["diluizione"]))
+                                                   ("variazione_azioni_1a", oltre))
                                     if v is None]
     if motivi:
         r["sicurezza_ok"] = False
@@ -440,7 +462,8 @@ def testo_dati_mancanti(r, breve=False):
 def leggi_disponibilita_tr(path=DISPONIBILITA_TR):
     """Disponibilità su Trade Republic dal file facoltativo (colonne ticker,
     isin e acquistabile_tr, oppure flag; isin_tr se c'è). None se il file
-    manca o non si legge: allora ogni riga ha "n.d."."""
+    manca, non si legge, è vuoto o non ha righe con un ticker: allora ogni
+    riga ha "n.d." e il report lo dice in avvisi."""
     if not os.path.exists(path):
         return None
     out = {}
@@ -456,6 +479,9 @@ def leggi_disponibilita_tr(path=DISPONIBILITA_TR):
                           "isin_tr": (r.get("isin_tr") or "").strip() or None}
     except Exception as e:
         print(f"[WARN] {path} non leggibile: {e}", file=sys.stderr)
+        return None
+    if not out:
+        print(f"[WARN] {path} vuoto o senza righe valide: ignorato", file=sys.stderr)
         return None
     return out
 
@@ -571,7 +597,7 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
     conteggi_tr = {v: sum(1 for r in lista if r.get("acquistabile_tr") == v)
                    for v in (*TR_VALORI, TR_ND)}
     if disp_tr is None:
-        avvisi.append(f"{path_tr} assente o non leggibile: acquistabile_tr = \"{TR_ND}\"")
+        avvisi.append(f"{path_tr} assente, vuoto o non leggibile: acquistabile_tr = \"{TR_ND}\"")
     garp = reports.get("garp") or {}
 
     report = {
@@ -590,7 +616,9 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
                          "3) punteggio_medio (media dei percentili dentro ogni famiglia).",
         "regola_sicurezza": "Esce dalla lista chi ha prezzo sotto il 40% del massimo a 52 "
                             "settimane o azioni oltre +25% in un anno (Moonshot e Temi: media "
-                            "annua pluriennale). Per GARP e Svolta, sotto soglia, il massimo è "
+                            "annua pluriennale; Qualità: solo sì/no in "
+                            "diluizione_oltre_soglia, usato se manca il numero). Per GARP e "
+                            "Svolta, sotto soglia, il massimo è "
                             "verificato sullo storico prezzi (frazionamenti). Dato mancante: "
                             "resta, con l'elenco in sicurezza_dati_mancanti (sicurezza_ok null "
                             "se mancano entrambi).",
@@ -600,7 +628,8 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
         "regola_tr": f"acquistabile_tr da {path_tr} (aggiorna_disponibilita_tr.py): "
                      "\"probabile\", \"incerto\", \"probabilmente no\"; per una società "
                      "con più ticker vale il migliore. Ticker assente dal file = \"incerto\"; "
-                     f"file assente = \"{TR_ND}\". È una deduzione dalle quotazioni tedesche: "
+                     f"file assente, vuoto o non leggibile = \"{TR_ND}\". È una deduzione "
+                     "dalle quotazioni tedesche: "
                      "va controllata nell'app.",
         "disponibilita_tr": {"file": path_tr, "letto": disp_tr is not None,
                              "righe": len(disp_tr) if disp_tr is not None else 0},
@@ -667,7 +696,9 @@ def scrivi_report(lista, esclusi, settimana, reports, fatte, out_dir=OUT_DIR, og
         motivi = []
         if "lontano_dal_massimo" in r["sicurezza_motivi"]:
             motivi.append(f"prezzo al {_pct(r['pct_max_52s'])} del massimo a 52 settimane")
-        if "diluizione" in r["sicurezza_motivi"]:
+        if "diluizione" in r["sicurezza_motivi"] and r["diluizione"] is None:
+            motivi.append("azioni oltre +25% in un anno (Qualità, bilanci EODHD)")
+        elif "diluizione" in r["sicurezza_motivi"]:
             motivi.append(f"azioni +{_pct(r['diluizione'])} l'anno ({r['diluizione_fonte']})")
         L.append(f"- {r['ticker']} ({(r.get('nome') or '')[:30]}; {', '.join(r['segnali'])}): "
                  + "; ".join(motivi))

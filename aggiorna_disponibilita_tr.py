@@ -187,7 +187,8 @@ def residuo_eodhd():
         d = r.json()
         return int(d.get("dailyRateLimit") or 0) - int(d.get("apiRequests") or 0)
     except Exception as e:
-        print(f"[WARN] contatore EODHD non leggibile: {e}", file=sys.stderr)
+        # solo il tipo dell'errore: il testo di requests contiene l'URL con api_token
+        print(f"[WARN] contatore EODHD non leggibile ({type(e).__name__})", file=sys.stderr)
         return None
 
 
@@ -209,7 +210,8 @@ def scarica_lista(borsa, cache_dir=None):
             print(f"[WARN] {borsa}: risposta inattesa", file=sys.stderr)
             return None, 1
     except Exception as e:
-        print(f"[WARN] {borsa}: {e}", file=sys.stderr)
+        # solo il tipo dell'errore: il testo di requests contiene l'URL con api_token
+        print(f"[WARN] {borsa}: errore ({type(e).__name__})", file=sys.stderr)
         return None, 1
     if percorso:
         os.makedirs(cache_dir, exist_ok=True)
@@ -281,7 +283,7 @@ class OpenFigi:
             try:
                 r = requests.post(OPENFIGI_URL, headers=self.intest, json=lavori, timeout=60)
             except Exception as e:
-                print(f"[WARN] OpenFIGI: {e}", file=sys.stderr)
+                print(f"[WARN] OpenFIGI: errore ({type(e).__name__})", file=sys.stderr)
                 time.sleep(10)
                 continue
             self.richieste += 1
