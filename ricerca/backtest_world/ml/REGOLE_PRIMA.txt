@@ -1,0 +1,14 @@
+F4 - regole fissate PRIMA di guardare i risultati (09/11/2026)
+Universo: ml/features_v3.pkl (liquide, >=300M$, tutti i settori), date trimestrali 2012-2026; periodo pulito = date 2018-03-31..2021-09-30 per x3, 2018-03-31..2025-09-30 per 12 mesi.
+Target: x3 (rendimento 36m >= +200%), top5_reg (top 5% a 12m nella regione), crash50 (-50% o peggio a 12m).
+Confronto: gruppo vs universo stessa regione e stessa data; caso = estrazioni casuali (1000) dello stesso numero di titoli nella stessa cella data x regione x terzile di capitalizzazione.
+t non sovrapposti: 12m -> una data all'anno (settembre), t semplice sulle differenze annuali; 36m -> date ogni 3 anni (pochissime: riportato solo come indicazione).
+Varianti dichiarate (tutte riportate):
+ A1 trascurate = n_est4<=2 (stime presenti in al massimo 2 degli ultimi 4 annunci) vs n_est4==4; solo dove n_est4 presente.
+ A2 analisti veri (EODHD Earnings Trend, campione casuale USA seme 42, <=280 societa'): <=3 analisti sul trimestre corrente all'ultima chiusura trimestrale prima della data; variante: terzile piu' basso del residuo log(analisti) su logmcap.
+ B1 quota insider (SEC Form 3/4/5, amministratori+dirigenti, ultima posizione dichiarata <=3 anni): >=10%; variante >=25%.
+ B2 fondatore-CEO: se nessun dataset storico pubblico, flag di OGGI (Yahoo titoli 'founder' nel CEO) solo date 2023-09..2025-09, con avvertenza sopravvivenza.
+ C1 quotate da 1-3 anni (age_y in [1,3)); variante age_y<1.
+ C2 fine lock-up: rendimento in eccesso [-10,+10] sedute attorno a IPO+180 giorni; e 12m dopo IPO+200 giorni vs universo.
+ C3 spin-off: elenco da fonti pubbliche; ingresso alla prima data trimestrale >= 1 mese dopo lo scorporo, finestra 0-2 anni.
+Dentro le liste: stesse prove su GARP e core di features_v3.
