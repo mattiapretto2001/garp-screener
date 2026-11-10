@@ -1,0 +1,36 @@
+{
+ "date": "2026-11-10",
+ "fonte_universo": "universe.json",
+ "universo": 10027,
+ "gruppo_del_giorno": 1,
+ "prioritari": 473,
+ "recupero_in_coda": 7398,
+ "recupero_mai_fotografati": 7398,
+ "da_scaricare": 2330,
+ "saltati_per_borsa": {
+  "HK": 27,
+  "LS": 4,
+  "MI": 35,
+  "VI": 13
+ },
+ "saltati_totale": 79,
+ "cap_crediti": 25000,
+ "residuo_min": 5000,
+ "crediti_rimasti_prima": 92010,
+ "esiti": {
+  "non_scaricato": 7246,
+  "non_trovato": 9,
+  "ok": 2157,
+  "senza_stime": 316
+ },
+ "righe_nel_file": 2482,
+ "recupero_scaricati": 152,
+ "risposte_429": 18,
+ "chiamate": 2500,
+ "crediti_stimati": 25000,
+ "crediti_rimasti_dopo": 67190,
+ "crediti_usati": 24820,
+ "interrotto": "tetto di 25000 crediti raggiunto",
+ "file": "snapshots/stime/2026-11-10.csv.gz",
+ "generated_at_utc": "2026-11-10T02:46:35.515499+00:00"
+}
