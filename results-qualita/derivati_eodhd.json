@@ -1,6 +1,6 @@
 {
 "nota": "Solo valori derivati dai bilanci EODHD (esiti sì/no, anni sopra soglia, data dell'ultimo bilancio annuale): nessun importo.",
-"aggiornato": "2026-11-10",
+"aggiornato": "2026-11-11",
 "titoli": {
 "0001.HK": {
 "esito": "ok",
@@ -3157,6 +3157,27 @@
 "data": "2026-11-10",
 "codice_eodhd": "CAKE.US"
 },
+"CARL-A.CO": {
+"esito": "ok",
+"ultimo_anno_fiscale": "2025-12-31",
+"storico_5_anni": true,
+"crescita_ricavi_ok": true,
+"anni_in_calo": 0,
+"anni_in_calo_ok": true,
+"debito_basso": false,
+"cassa_netta": false,
+"anni_roe_15": 4,
+"roe_stabile": true,
+"anni_margine_20": 0,
+"margini_alti": false,
+"margine_non_in_calo": true,
+"margine_lordo_stabile": false,
+"q1_bilanci": false,
+"q2_bilanci": false,
+"azioni_oltre_25_1a": false,
+"data": "2026-11-11",
+"codice_eodhd": "CARL-A.CO"
+},
 "CART": {
 "esito": "ok",
 "ultimo_anno_fiscale": "2025-12-31",
@@ -4942,6 +4963,27 @@
 "data": "2026-11-10",
 "codice_eodhd": "DHR.US"
 },
+"DIO.DE": {
+"esito": "storico_corto",
+"ultimo_anno_fiscale": "2025-12-31",
+"storico_5_anni": false,
+"crescita_ricavi_ok": false,
+"anni_in_calo": 2,
+"anni_in_calo_ok": false,
+"debito_basso": true,
+"cassa_netta": false,
+"anni_roe_15": 5,
+"roe_stabile": true,
+"anni_margine_20": 5,
+"margini_alti": true,
+"margine_non_in_calo": false,
+"margine_lordo_stabile": false,
+"q1_bilanci": false,
+"q2_bilanci": false,
+"azioni_oltre_25_1a": false,
+"data": "2026-11-11",
+"codice_eodhd": "DIO.XETRA"
+},
 "DKNG": {
 "esito": "ok",
 "ultimo_anno_fiscale": "2025-12-31",
@@ -5718,6 +5760,11 @@
 "azioni_oltre_25_1a": false,
 "data": "2026-11-10",
 "codice_eodhd": "ENSG.US"
+},
+"ENX.VI": {
+"esito": "non_trovato",
+"data": "2026-11-11",
+"codice_eodhd": "ENX.VI"
 },
 "EPI-A.ST": {
 "esito": "ok",
@@ -6642,6 +6689,27 @@
 "azioni_oltre_25_1a": false,
 "data": "2026-11-10",
 "codice_eodhd": "G.US"
+},
+"G1A.DE": {
+"esito": "ok",
+"ultimo_anno_fiscale": "2025-12-31",
+"storico_5_anni": true,
+"crescita_ricavi_ok": false,
+"anni_in_calo": 0,
+"anni_in_calo_ok": true,
+"debito_basso": true,
+"cassa_netta": true,
+"anni_roe_15": 4,
+"roe_stabile": true,
+"anni_margine_20": 0,
+"margini_alti": false,
+"margine_non_in_calo": true,
+"margine_lordo_stabile": true,
+"q1_bilanci": false,
+"q2_bilanci": false,
+"azioni_oltre_25_1a": false,
+"data": "2026-11-11",
+"codice_eodhd": "G1A.XETRA"
 },
 "G24.DE": {
 "esito": "ok",
@@ -12292,6 +12360,11 @@
 "data": "2026-11-10",
 "codice_eodhd": "PUB.PA"
 },
+"PUB.VI": {
+"esito": "non_trovato",
+"data": "2026-11-11",
+"codice_eodhd": "PUB.VI"
+},
 "PUIG.MC": {
 "esito": "ok",
 "ultimo_anno_fiscale": "2025-12-31",
@@ -13325,6 +13398,27 @@
 "azioni_oltre_25_1a": false,
 "data": "2026-11-10",
 "codice_eodhd": "SAND.ST"
+},
+"SANM": {
+"esito": "ok",
+"ultimo_anno_fiscale": "2026-09-30",
+"storico_5_anni": true,
+"crescita_ricavi_ok": true,
+"anni_in_calo": 1,
+"anni_in_calo_ok": true,
+"debito_basso": true,
+"cassa_netta": false,
+"anni_roe_15": 0,
+"roe_stabile": false,
+"anni_margine_20": 0,
+"margini_alti": false,
+"margine_non_in_calo": true,
+"margine_lordo_stabile": true,
+"q1_bilanci": false,
+"q2_bilanci": false,
+"azioni_oltre_25_1a": false,
+"data": "2026-11-11",
+"codice_eodhd": "SANM.US"
 },
 "SAP": {
 "esito": "ok",
@@ -16354,6 +16448,27 @@
 "azioni_oltre_25_1a": false,
 "data": "2026-11-10",
 "codice_eodhd": "WSO.US"
+},
+"WSO-B": {
+"esito": "ok",
+"ultimo_anno_fiscale": "2025-12-31",
+"storico_5_anni": true,
+"crescita_ricavi_ok": false,
+"anni_in_calo": 1,
+"anni_in_calo_ok": true,
+"debito_basso": true,
+"cassa_netta": true,
+"anni_roe_15": 5,
+"roe_stabile": true,
+"anni_margine_20": 0,
+"margini_alti": false,
+"margine_non_in_calo": true,
+"margine_lordo_stabile": true,
+"q1_bilanci": false,
+"q2_bilanci": false,
+"azioni_oltre_25_1a": false,
+"data": "2026-11-11",
+"codice_eodhd": "WSO-B.US"
 },
 "WST": {
 "esito": "ok",
