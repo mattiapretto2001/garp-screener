@@ -26,3 +26,17 @@ CRSP
 SAF.PA
 MA
 SPGI
+# Aggiunti il 13/11/2026: schede del 28/10-07/11 che mancavano, schede della Regia del 10-13/11
+# e Radiografie della sessione di riferimento del 13/11.
+KNSA
+CAF.MC
+HEIJM.AS
+ENR.DE
+MEDI.OL
+MPWR
+BONEX.ST
+ANET
+ONON
+MYCR.ST
+SECT-B.ST
+HEI
