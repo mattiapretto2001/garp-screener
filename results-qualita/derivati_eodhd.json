@@ -1,6 +1,6 @@
 {
 "nota": "Solo valori derivati dai bilanci EODHD (esiti sì/no, anni sopra soglia, data dell'ultimo bilancio annuale): nessun importo.",
-"aggiornato": "2026-11-20",
+"aggiornato": "2026-11-21",
 "titoli": {
 "0001.HK": {
 "esito": "ok",
@@ -3301,7 +3301,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-11",
+"data": "2026-11-21",
 "codice_eodhd": "CARL-A.CO"
 },
 "CARL-B.CO": {
@@ -5170,7 +5170,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-11",
+"data": "2026-11-21",
 "codice_eodhd": "DIO.XETRA"
 },
 "DKNG": {
@@ -8745,7 +8745,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-12",
+"data": "2026-11-21",
 "codice_eodhd": "ITRK.LSE"
 },
 "ITW": {
