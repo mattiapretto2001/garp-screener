@@ -2,8 +2,19 @@ name: GARP Daily Screener
 
 on:
   schedule:
-    # 20:05 UTC lun-ven = 22:05 ora italiana (estate) / 21:05 (inverno)
-    - cron: "5 20 * * 1-5"
+    # Dal 25/11/2026. I giri pianificati di GitHub non sono garantiti: nelle ore di
+    # carico partono in ritardo (5-8 ore nel novembre 2026, peggio a ridosso dell'ora
+    # piena) e a volte saltano (venerdì 21/11/2026). Per questo:
+    # - giro principale alle 21:37 UTC lun-ven = 22:37 ora italiana (inverno) /
+    #   23:37 (estate). Dopo la chiusura di Wall Street in entrambe le stagioni
+    #   (21:00 UTC d'inverno, 20:00 d'estate): il vecchio 20:05 UTC, se fosse
+    #   partito puntuale, d'inverno avrebbe letto la seduta ancora aperta.
+    #   Minuto :37 invece di :05, lontano dall'ora piena;
+    - cron: "37 21 * * 1-5"
+    # - giro di riserva la notte dopo, mar-sab alle 02:37 UTC = 03:37 ora italiana
+    #   (inverno) / 04:37 (estate). Il job "verifica" lo ferma subito se la seduta
+    #   è già stata coperta, quindi in una notte normale lo screening gira una volta sola.
+    - cron: "37 2 * * 2-6"
   workflow_dispatch: {}
   push:
     branches: [main]
@@ -29,8 +40,53 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Dal 25/11/2026: decide se un giro pianificato serve. Push e avvio a mano girano
+  # sempre. Un giro pianificato si ferma se su main c'è già un commit "Screening ..."
+  # fatto dopo la chiusura dell'ultima seduta (ultimo giorno lun-ven alle 21:00 UTC
+  # già passato): così principale e riserva della stessa notte non girano entrambi,
+  # anche se uno dei due parte con ore di ritardo, e la sera dopo si riparte.
+  # Legge main dal server e non la versione con cui il giro è stato messo in coda,
+  # che può essere vecchia. Le feste di borsa USA non sono considerate (come prima).
+  verifica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      esegui: ${{ steps.decidi.outputs.esegui }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Decidi se lo screening serve
+        id: decidi
+        env:
+          EVENTO: ${{ github.event_name }}
+        run: |
+          if [ "$EVENTO" != "schedule" ]; then
+            echo "Evento $EVENTO: lo screening gira sempre"
+            echo "esegui=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch --quiet --depth=50 origin main
+          ULTIMO=$(git log -1 FETCH_HEAD --grep='^Screening GARP' --format=%ct || true)
+          ORA=$(date +%s)
+          # chiusura dell'ultima seduta: oggi alle 21:00 UTC se è già passata,
+          # altrimenti il giorno prima; poi indietro fino a un giorno lun-ven
+          CHIUSURA=$(date -u -d "$(date -u +%F) 21:00" +%s)
+          if [ "$ORA" -lt "$CHIUSURA" ]; then CHIUSURA=$((CHIUSURA - 86400)); fi
+          while [ "$(date -u -d "@$CHIUSURA" +%u)" -gt 5 ]; do CHIUSURA=$((CHIUSURA - 86400)); done
+          echo "Ultima seduta coperta se c'è uno screening dopo: $(date -u -d "@$CHIUSURA" '+%F %H:%M UTC')"
+          if [ -n "$ULTIMO" ] && [ "$ULTIMO" -ge "$CHIUSURA" ]; then
+            echo "Screening già pubblicato il $(date -u -d "@$ULTIMO" '+%F %H:%M UTC'): questo giro non serve"
+            echo "esegui=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Seduta non ancora coperta: si parte"
+            echo "esegui=true" >> "$GITHUB_OUTPUT"
+          fi
+
   # Universo costruito una volta sola e passato a tutti gli shard
   universe:
+    needs: verifica
+    if: needs.verifica.outputs.esegui == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
