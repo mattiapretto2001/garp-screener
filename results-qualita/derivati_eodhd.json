@@ -1,6 +1,6 @@
 {
 "nota": "Solo valori derivati dai bilanci EODHD (esiti sì/no, anni sopra soglia, data dell'ultimo bilancio annuale): nessun importo.",
-"aggiornato": "2026-11-24",
+"aggiornato": "2026-11-25",
 "titoli": {
 "0001.HK": {
 "esito": "ok",
@@ -251,7 +251,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "1093.HK"
 },
 "1177.HK": {
@@ -566,7 +566,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "AAF.LSE"
 },
 "AAON": {
@@ -587,7 +587,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "AAON.US"
 },
 "AAPL": {
@@ -608,7 +608,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "AAPL.US"
 },
 "ABBN.SW": {
@@ -1028,7 +1028,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "AEIS.US"
 },
 "AENA.MC": {
@@ -1091,7 +1091,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "AFRM.US"
 },
 "AIR.PA": {
@@ -1133,7 +1133,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "AIT.US"
 },
 "AKAM": {
@@ -1238,7 +1238,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "ALFA.ST"
 },
 "ALGN": {
@@ -1259,7 +1259,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "ALGN.US"
 },
 "ALH": {
@@ -1301,7 +1301,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "ALK-B.CO"
 },
 "ALKS": {
@@ -1469,7 +1469,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "AMD.US"
 },
 "AMGN": {
@@ -1532,7 +1532,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "AMS.MC"
 },
 "AMX": {
@@ -1637,7 +1637,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "ANDR.VI"
 },
 "ANET": {
@@ -1658,7 +1658,7 @@
 "q1_bilanci": true,
 "q2_bilanci": true,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "ANET.US"
 },
 "ANF": {
@@ -2015,7 +2015,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "ATAT.US"
 },
 "ATCO-A.ST": {
@@ -2288,7 +2288,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "AYI.US"
 },
 "AZN.L": {
@@ -2372,7 +2372,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "BAB.LSE"
 },
 "BAH": {
@@ -2393,7 +2393,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "BAH.US"
 },
 "BATS.L": {
@@ -2687,7 +2687,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "BILL.US"
 },
 "BIM.PA": {
@@ -2771,7 +2771,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "BJ.US"
 },
 "BKNG": {
@@ -2792,7 +2792,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "BKNG.US"
 },
 "BLCO": {
@@ -2855,7 +2855,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "BMRN.US"
 },
 "BMY": {
@@ -3070,7 +3070,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "BSY.US"
 },
 "BTSG": {
@@ -3259,7 +3259,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "CAI.US"
 },
 "CAKE": {
@@ -3280,7 +3280,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "CAKE.US"
 },
 "CAMT": {
@@ -3406,7 +3406,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "CAT.US"
 },
 "CBOE": {
@@ -3511,7 +3511,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "CCK.US"
 },
 "CCL": {
@@ -3826,7 +3826,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "CHWY.US"
 },
 "CHYM": {
@@ -3931,7 +3931,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "CLH.US"
 },
 "CLS": {
@@ -4141,7 +4141,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "COKE.US"
 },
 "COLO-B.CO": {
@@ -4225,7 +4225,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "COO.US"
 },
 "COR": {
@@ -4246,7 +4246,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "COR.US"
 },
 "CORT": {
@@ -4320,7 +4320,7 @@
 "anni_in_calo": 1,
 "anni_in_calo_ok": true,
 "debito_basso": true,
-"cassa_netta": true,
+"cassa_netta": false,
 "anni_roe_15": 4,
 "roe_stabile": true,
 "anni_margine_20": 3,
@@ -4330,7 +4330,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "CPA.US"
 },
 "CPAY": {
@@ -4393,7 +4393,7 @@
 "q1_bilanci": true,
 "q2_bilanci": true,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "CPRT.US"
 },
 "CR": {
@@ -4456,7 +4456,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "CRM.US"
 },
 "CROX": {
@@ -4561,7 +4561,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "CRWV.US"
 },
 "CSCO": {
@@ -4645,7 +4645,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "CSX.US"
 },
 "CTAS": {
@@ -4813,7 +4813,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "DAL.US"
 },
 "DAR": {
@@ -4855,7 +4855,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "DASH.US"
 },
 "DB1.DE": {
@@ -5002,7 +5002,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "DEC.PA"
 },
 "DECK": {
@@ -5044,7 +5044,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "DEMANT.CO"
 },
 "DG": {
@@ -5238,7 +5238,7 @@
 },
 "DLB": {
 "esito": "ok",
-"ultimo_anno_fiscale": "2025-09-30",
+"ultimo_anno_fiscale": "2026-09-30",
 "storico_5_anni": true,
 "crescita_ricavi_ok": false,
 "anni_in_calo": 2,
@@ -5254,7 +5254,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "DLB.US"
 },
 "DLTR": {
@@ -5275,7 +5275,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "DLTR.US"
 },
 "DNTH": {
@@ -5506,7 +5506,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "DTE.XETRA"
 },
 "DUOL": {
@@ -5527,7 +5527,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "DUOL.US"
 },
 "DVA": {
@@ -5611,7 +5611,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "EAT.US"
 },
 "EBAY": {
@@ -5674,7 +5674,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "EDU.US"
 },
 "EFX": {
@@ -5716,7 +5716,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "EHC.US"
 },
 "EL": {
@@ -5863,7 +5863,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "EMMN.SW"
 },
 "EMR": {
@@ -6036,7 +6036,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "ERIC-B.ST"
 },
 "ESLT": {
@@ -6078,7 +6078,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "ESTC.US"
 },
 "ETN": {
@@ -6204,7 +6204,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-10",
+"data": "2026-11-25",
 "codice_eodhd": "EWTX.US"
 },
 "EXEL": {
@@ -6225,7 +6225,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "EXEL.US"
 },
 "EXLS": {
@@ -6393,7 +6393,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "FCN.US"
 },
 "FDS": {
@@ -6435,7 +6435,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "FDXF.US"
 },
 "FER.MC": {
@@ -6750,7 +6750,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "FPS.US"
 },
 "FRAS.L": {
@@ -6834,7 +6834,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "FSS.US"
 },
 "FTAI": {
@@ -7170,7 +7170,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "GEHC.US"
 },
 "GEN": {
@@ -7779,7 +7779,7 @@
 "q1_bilanci": false,
 "q2_bilanci": true,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "HEI.US"
 },
 "HEN3.DE": {
@@ -7800,7 +7800,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "HEN3.XETRA"
 },
 "HEXA-B.ST": {
@@ -7884,7 +7884,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "HLN.LSE"
 },
 "HLT": {
@@ -8199,7 +8199,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "HWDN.LSE"
 },
 "HWM": {
@@ -8262,7 +8262,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "IBP.US"
 },
 "IBRX": {
@@ -8283,7 +8283,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "IBRX.US"
 },
 "ICE": {
@@ -8325,7 +8325,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "IDCC.US"
 },
 "IDR.MC": {
@@ -8409,7 +8409,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "IHG.LSE"
 },
 "ILMN": {
@@ -8535,7 +8535,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "INFY.US"
 },
 "INSM": {
@@ -8577,7 +8577,7 @@
 "q1_bilanci": false,
 "q2_bilanci": true,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "INTU.US"
 },
 "IOS.DE": {
@@ -8640,7 +8640,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "IPN.PA"
 },
 "IQV": {
@@ -8661,7 +8661,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "IQV.US"
 },
 "IRDM": {
@@ -8787,7 +8787,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "ITW.US"
 },
 "ITX.MC": {
@@ -8934,7 +8934,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "JKHY.US"
 },
 "JMKE": {
@@ -9081,7 +9081,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "KER.PA"
 },
 "KESKOB.HE": {
@@ -9165,7 +9165,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "KMB.US"
 },
 "KNEBV.HE": {
@@ -9269,8 +9269,8 @@
 "margine_lordo_stabile": true,
 "q1_bilanci": true,
 "q2_bilanci": false,
-"azioni_oltre_25_1a": null,
-"data": "2026-11-12",
+"azioni_oltre_25_1a": false,
+"data": "2026-11-25",
 "codice_eodhd": "KOF.US"
 },
 "KOG.OL": {
@@ -9417,7 +9417,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "KVYO.US"
 },
 "KYGA.L": {
@@ -9795,7 +9795,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "LQDA.US"
 },
 "LR.PA": {
@@ -9879,7 +9879,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "LSEG.LSE"
 },
 "LSTR": {
@@ -9984,7 +9984,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "LVS.US"
 },
 "LYFT": {
@@ -10068,7 +10068,7 @@
 "q1_bilanci": true,
 "q2_bilanci": true,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "MA.US"
 },
 "MANH": {
@@ -10152,7 +10152,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": null,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "MBGL.US"
 },
 "MC.PA": {
@@ -10488,7 +10488,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "MKS.LSE"
 },
 "MKSI": {
@@ -10509,7 +10509,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "MKSI.US"
 },
 "MLI": {
@@ -10593,7 +10593,7 @@
 "q1_bilanci": true,
 "q2_bilanci": true,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "MNST.US"
 },
 "MO": {
@@ -10640,14 +10640,14 @@
 },
 "MOG-B": {
 "esito": "ok",
-"ultimo_anno_fiscale": "2025-09-30",
+"ultimo_anno_fiscale": "2026-09-30",
 "storico_5_anni": true,
-"crescita_ricavi_ok": false,
-"anni_in_calo": 1,
+"crescita_ricavi_ok": true,
+"anni_in_calo": 0,
 "anni_in_calo_ok": true,
 "debito_basso": true,
 "cassa_netta": false,
-"anni_roe_15": 0,
+"anni_roe_15": 1,
 "roe_stabile": false,
 "anni_margine_20": 0,
 "margini_alti": false,
@@ -10656,7 +10656,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "MOG-B.US"
 },
 "MORN": {
@@ -10929,7 +10929,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "MTD.US"
 },
 "MTN": {
@@ -10950,7 +10950,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "MTN.US"
 },
 "MTSI": {
@@ -11076,7 +11076,7 @@
 "q1_bilanci": true,
 "q2_bilanci": true,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "MYCR.ST"
 },
 "NAVN": {
@@ -11097,7 +11097,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "NAVN.US"
 },
 "NBIS": {
@@ -11328,7 +11328,7 @@
 "q1_bilanci": true,
 "q2_bilanci": true,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "NFLX.US"
 },
 "NICE": {
@@ -11349,7 +11349,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "NICE.US"
 },
 "NKE": {
@@ -11412,7 +11412,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "NOVN.SW"
 },
 "NOVO-B.CO": {
@@ -11433,7 +11433,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "NOVO-B.CO"
 },
 "NOW": {
@@ -11538,7 +11538,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "NTRA.US"
 },
 "NTSK": {
@@ -11559,7 +11559,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "NTSK.US"
 },
 "NVDA": {
@@ -11727,7 +11727,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "NXT.US"
 },
 "NXT.L": {
@@ -11748,7 +11748,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "NXT.LSE"
 },
 "NYT": {
@@ -11958,7 +11958,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "OR.PA"
 },
 "ORCL": {
@@ -12168,7 +12168,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "PANW.US"
 },
 "PATH": {
@@ -12315,7 +12315,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "PDD.US"
 },
 "PEGA": {
@@ -12399,7 +12399,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "PFE.US"
 },
 "PG": {
@@ -12588,7 +12588,7 @@
 "q1_bilanci": true,
 "q2_bilanci": true,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "PNDORA.CO"
 },
 "PNR": {
@@ -12777,7 +12777,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "PTGX.US"
 },
 "PUB.PA": {
@@ -12908,7 +12908,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "QIA.XETRA"
 },
 "QLYS": {
@@ -12992,7 +12992,7 @@
 "q1_bilanci": true,
 "q2_bilanci": true,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "RAA.XETRA"
 },
 "RACE": {
@@ -13160,7 +13160,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "RGEN.US"
 },
 "RHM.DE": {
@@ -13181,7 +13181,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "RHM.XETRA"
 },
 "RI.PA": {
@@ -13223,7 +13223,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "RKT.LSE"
 },
 "RL": {
@@ -13244,7 +13244,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "RL.US"
 },
 "RMBS": {
@@ -13480,7 +13480,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "ROR.LSE"
 },
 "ROST": {
@@ -13648,7 +13648,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "RY4C.XETRA"
 },
 "RYTM": {
@@ -13690,7 +13690,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "S.US"
 },
 "SAAB-B.ST": {
@@ -14068,7 +14068,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "SFSN.SW"
 },
 "SGE.L": {
@@ -14173,7 +14173,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "SHOP.US"
 },
 "SIMO": {
@@ -14362,7 +14362,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "SN.LSE"
 },
 "SNA": {
@@ -14509,7 +14509,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "SOFI.US"
 },
 "SOLV": {
@@ -14635,7 +14635,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "SPIE.PA"
 },
 "SPOT.VI": {
@@ -14661,7 +14661,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "SPX.LSE"
 },
 "STMN.SW": {
@@ -14682,7 +14682,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "STMN.SW"
 },
 "STN": {
@@ -14829,7 +14829,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "SUN.SW"
 },
 "SUNB": {
@@ -14850,7 +14850,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "SUNB.US"
 },
 "SUPN": {
@@ -14955,7 +14955,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "T.US"
 },
 "TAK": {
@@ -14976,7 +14976,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "TAK.US"
 },
 "TAL": {
@@ -14997,7 +14997,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "TAL.US"
 },
 "TDG": {
@@ -15081,7 +15081,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "TEL.US"
 },
 "TEL.OL": {
@@ -15165,7 +15165,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "TER.US"
 },
 "TEVA": {
@@ -15585,7 +15585,7 @@
 "q1_bilanci": true,
 "q2_bilanci": true,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "TSM.US"
 },
 "TT": {
@@ -15627,7 +15627,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "TTAN.US"
 },
 "TTC": {
@@ -15714,6 +15714,27 @@
 "data": "2026-11-19",
 "codice_eodhd": "TTWO.US"
 },
+"TVTX": {
+"esito": "ok",
+"ultimo_anno_fiscale": "2025-12-31",
+"storico_5_anni": true,
+"crescita_ricavi_ok": true,
+"anni_in_calo": 2,
+"anni_in_calo_ok": false,
+"debito_basso": false,
+"cassa_netta": false,
+"anni_roe_15": 0,
+"roe_stabile": false,
+"anni_margine_20": 0,
+"margini_alti": false,
+"margine_non_in_calo": true,
+"margine_lordo_stabile": true,
+"q1_bilanci": false,
+"q2_bilanci": false,
+"azioni_oltre_25_1a": false,
+"data": "2026-11-25",
+"codice_eodhd": "TVTX.US"
+},
 "TWST": {
 "esito": "ok",
 "ultimo_anno_fiscale": "2026-09-30",
@@ -15732,7 +15753,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "TWST.US"
 },
 "TXG": {
@@ -15837,7 +15858,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "UAL.US"
 },
 "UCB.BR": {
@@ -15921,7 +15942,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "UI.US"
 },
 "ULS": {
@@ -16068,7 +16089,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "UPS.US"
 },
 "URBN": {
@@ -16131,7 +16152,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "USFD.US"
 },
 "UTHR": {
@@ -16194,7 +16215,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "VACN.SW"
 },
 "VEEV": {
@@ -16215,7 +16236,7 @@
 "q1_bilanci": false,
 "q2_bilanci": true,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "VEEV.US"
 },
 "VEON": {
@@ -16509,7 +16530,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "VRT.US"
 },
 "VRTX": {
@@ -16698,7 +16719,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "WDAY.US"
 },
 "WDC": {
@@ -16761,7 +16782,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "WH.US"
 },
 "WIT": {
@@ -16929,7 +16950,7 @@
 "q1_bilanci": true,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-18",
+"data": "2026-11-25",
 "codice_eodhd": "WSE.US"
 },
 "WSM": {
@@ -16971,7 +16992,7 @@
 "q1_bilanci": false,
 "q2_bilanci": false,
 "azioni_oltre_25_1a": false,
-"data": "2026-11-10",
+"data": "2026-11-25",
 "codice_eodhd": "WSO.US"
 },
 "WSO-B": {
