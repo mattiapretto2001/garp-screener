@@ -1,15 +1,15 @@
-# Temi strutturali — 2026-11-26
+# Temi strutturali — 2026-11-27
 
 > ⚠️ **Non testato.** Monitor: nessun vantaggio dimostrato; solo etichetta. La lista curata non si può provare sul passato senza il senno di poi; le industrie intere (uranio, rinnovabili, solare, rame...) nel 2012-26 sono andate in media peggio del mercato, con fiammate brevi. Per esporsi a un tema è meglio un ETF di settore, con una quota piccola e fissa.
 
-Seguiti: 138 | Verdi: **7** | Nuovi verdi: — | Persi: AQ.ST
+Seguiti: 136 | Verdi: **8** | Nuovi verdi: AQ.ST | Persi: —
 
 ## Nucleare, SMR e uranio
 
 | | Ticker | Nome | Profilo | Score | Ricavi q/q | % max 52w | Campanelli |
 |---|---|---|---|---|---|---|---|
 | 🟡 | VST | Vistra Corp. | crescita | 5 | 28% | 66% | — |
-| 🟡 | RR.L | Rolls-Royce Holdings plc | crescita | 4 | 21% | 79% | — |
+| 🟡 | RR.L | Rolls-Royce Holdings plc | crescita | 4 | 21% | 82% | — |
 | 🟡 | KAP.L | National Atomic Company Kaza | crescita | 4 | 26% | 31% | — |
 | 🟡 | CEG | Constellation Energy Corpora | crescita | 3 | 45% | 62% | — |
 | 🟡 | BWXT | BWX Technologies, Inc. | stabile | 3 | 10% | 47% | — |
@@ -32,103 +32,101 @@ Seguiti: 138 | Verdi: **7** | Nuovi verdi: — | Persi: AQ.ST
 
 | | Ticker | Nome | Profilo | Score | Ricavi q/q | % max 52w | Campanelli |
 |---|---|---|---|---|---|---|---|
-| 🟢 | ZAP.OL · | Zaptec ASA | crescita | 6 | 39% | 84% | — |
+| 🟢 | AQ.ST · | AQ Group AB (publ) | crescita | 7 | 21% | 85% | — |
+| 🟢 | ZAP.OL · | Zaptec ASA | crescita | 6 | 39% | 86% | — |
 | 🟢 | HAYW · | Hayward Holdings, Inc. | stabile | 6 | 6% | 96% | — |
 | 🟢 | AYI · | Acuity Inc. | stabile | 5 | 3% | 83% | — |
-| 🟢 | EOLU-B.ST · | Eolus Aktiebolag (publ) | crescita | 5 | 98% | 82% | — |
-| 🟢 | ENRGY.BR · | EnergyVision NV | crescita | 4 | 35% | 98% | — |
-| 🟢 | GARO.ST · | Garo Aktiebolag (publ) | stabile | 4 | 6% | 77% | — |
-| 🟢 | FORTUM.HE · | Fortum Oyj | crescita | 3 | 20% | 84% | — |
-| 🟡 | 0006.HK · | Power Assets Holdings Limite | stabile | 6 | -15% | 99% | ricavi -15% |
-| 🟡 | AQ.ST · | AQ Group AB (publ) | crescita | 6 | 21% | 82% | — |
-| 🟡 | ATYM.L · | Atalaya Mining Copper, S.A. | crescita | 6 | 76% | 60% | — |
+| 🟢 | EOLU-B.ST · | Eolus Aktiebolag (publ) | crescita | 5 | 98% | 85% | — |
+| 🟢 | ENRGY.BR · | EnergyVision NV | crescita | 4 | 35% | 97% | — |
+| 🟢 | GARO.ST · | Garo Aktiebolag (publ) | stabile | 4 | 6% | 78% | — |
+| 🟢 | FORTUM.HE · | Fortum Oyj | crescita | 3 | 20% | 85% | — |
+| 🟡 | 0006.HK · | Power Assets Holdings Limite | stabile | 6 | -15% | 97% | ricavi -15% |
+| 🟡 | ATYM.L · | Atalaya Mining Copper, S.A. | crescita | 6 | 76% | 62% | — |
 | 🟡 | GEV | GE Vernova Inc. | crescita | 5 | 27% | 60% | — |
-| 🟡 | SCCO · | Southern Copper Corporation | crescita | 5 | 39% | 64% | — |
-| 🟡 | ENR.DE | Siemens Energy AG | crescita | 5 | 23% | 59% | — |
+| 🟡 | ENR.DE | Siemens Energy AG | crescita | 5 | 23% | 61% | — |
 | 🟡 | VRT | Vertiv Holdings Co | crescita | 5 | 61% | 46% | — |
-| 🟡 | LR.PA · | Legrand SA | crescita | 5 | 33% | 73% | — |
+| 🟡 | LR.PA · | Legrand SA | crescita | 5 | 33% | 74% | — |
 | 🟡 | EME | EMCOR Group, Inc. | crescita | 5 | 29% | 66% | — |
 | 🟡 | TECK · | Teck Resources Limited | crescita | 5 | 33% | 71% | — |
 | 🟡 | AEIS · | Advanced Energy Industries,  | crescita | 5 | 50% | 50% | — |
 | 🟡 | POWL · | Powell Industries, Inc. | crescita | 5 | 33% | 47% | — |
 | 🟡 | RNW · | ReNew Energy Global Plc | crescita | 5 | 28% | 90% | debito netto/EBITDA 7.6x |
-| 🟡 | F3C.DE · | SFC Energy AG | crescita | 5 | 73% | 73% | — |
-| 🟡 | SU.PA | Schneider Electric S.E. | stabile | 4 | 10% | 69% | — |
+| 🟡 | F3C.DE · | SFC Energy AG | crescita | 5 | 73% | 75% | — |
+| 🟡 | 6501.T | Hitachi, Ltd. | stabile | 4 | 15% | 86% | utili -18% |
+| 🟡 | SU.PA | Schneider Electric S.E. | stabile | 4 | 10% | 70% | — |
 | 🟡 | PWR | Quanta Services, Inc. | crescita | 4 | 57% | 72% | — |
 | 🟡 | AEP | American Electric Power Comp | stabile | 4 | 14% | 91% | — |
-| 🟡 | ANTO.L · | Antofagasta plc | crescita | 4 | 18% | 56% | — |
+| 🟡 | ANTO.L · | Antofagasta plc | crescita | 4 | 18% | 58% | — |
 | 🟡 | NRG · | NRG Energy, Inc. | crescita | 4 | 24% | 48% | — |
 | 🟡 | NVT | nVent Electric plc | crescita | 4 | 44% | 56% | — |
 | 🟡 | MWH · | SOLV Energy, Inc. | crescita | 4 | 65% | 53% | — |
-| 🟡 | DRX.L · | Drax Group plc | stabile | 4 | -6% | 92% | ricavi -6%; utili -20% |
+| 🟡 | DRX.L · | Drax Group plc | stabile | 4 | -6% | 93% | ricavi -6%; utili -20% |
 | 🟡 | ERO · | Ero Copper Corp. | crescita | 4 | 96% | 55% | — |
-| 🟡 | LIGHT.AS · | Signify N.V. | stabile | 4 | -3% | 64% | ricavi -3% |
-| 🟡 | MGN.OL · | Magnora ASA | crescita | 4 | 160% | 55% | — |
+| 🟡 | LIGHT.AS · | Signify N.V. | stabile | 4 | -3% | 66% | ricavi -3% |
+| 🟡 | MGN.OL · | Magnora ASA | crescita | 4 | 160% | 54% | — |
 | 🟡 | PLPC | Preformed Line Products Comp | crescita | 4 | 18% | 52% | — |
-| 🟡 | CTEK.ST · | CTEK AB (publ) | stabile | 4 | -9% | 91% | ricavi -9% |
-| 🟡 | CNTL.SW · | Centiel AG | crescita | 4 | 37% | 54% | — |
-| 🟡 | 6501.T | Hitachi, Ltd. | stabile | 3 | 15% | 83% | utili -18% |
+| 🟡 | CTEK.ST · | CTEK AB (publ) | stabile | 4 | -9% | 94% | ricavi -9% |
+| 🟡 | CNTL.SW · | Centiel AG | crescita | 4 | 37% | 57% | — |
 | 🟡 | ETN | Eaton Corporation plc | crescita | 3 | 28% | 66% | — |
-| 🟡 | ABBN.SW | ABB Ltd | stabile | 3 | 14% | 71% | utili -1% |
+| 🟡 | ABBN.SW | ABB Ltd | stabile | 3 | 14% | 73% | utili -1% |
 | 🟡 | 0836.HK · | China Resources Power Holdin | stabile | 3 | 9% | 89% | utili -16% |
 | 🟡 | FCX | Freeport-McMoRan Inc. | stabile | 3 | 8% | 61% | — |
 | 🟡 | HUBB | Hubbell Incorporated | crescita | 3 | 25% | 76% | — |
 | 🟡 | HBM · | Hudbay Minerals Inc. | crescita | 3 | 121% | 54% | — |
-| 🟡 | CNA.L · | Centrica plc | stabile | 3 | 1% | 66% | — |
+| 🟡 | CNA.L · | Centrica plc | stabile | 3 | 1% | 67% | — |
 | 🟡 | BKW.SW · | BKW AG | stabile | 3 | 1% | 69% | — |
-| 🟡 | BEPC · | Brookfield Renewable Corpora | crescita | 3 | 23% | 68% | debito netto/EBITDA 7.6x |
 | 🟡 | ENS · | EnerSys | stabile | 3 | -0% | 52% | ricavi -0% |
 | 🟡 | GUNN · | Gunnison Copper Corp. | crescita | 3 | 1162% | 45% | — |
-| 🟡 | ORRON.ST · | Orrön Energy AB (publ) | pre-ricavi | 3 | -36% | 68% | — |
+| 🟡 | ORRON.ST · | Orrön Energy AB (publ) | pre-ricavi | 3 | -36% | 69% | — |
 | 🟡 | REHN.SW · | Romande Energie Holding SA | stabile | 3 | 5% | 89% | — |
+| 🟡 | CMB.MI · | Cembre S.p.A. | crescita | 3 | 20% | 68% | — |
 | 🟡 | ELEC.PA · | Électricite de Strasbourg So | stabile | 3 | -7% | 65% | ricavi -7%; utili -33% |
-| 🟡 | CMB.MI · | Cembre S.p.A. | crescita | 3 | 20% | 66% | — |
 | 🟡 | AMSC | American Superconductor Corp | crescita | 3 | 43% | 35% | diluizione 17%/anno |
-| 🟡 | NEAG.SW · | naturenergie holding AG | stabile | 3 | -18% | 82% | ricavi -18%; utili -35% |
+| 🟡 | NEAG.SW · | naturenergie holding AG | stabile | 3 | -18% | 81% | ricavi -18%; utili -35% |
 | 🟡 | IE · | Ivanhoe Electric Inc. | pre-ricavi | 3 | 30% | 27% | runway 2.4 anni; diluizione 16%/anno |
-| 🟡 | CWR.L · | Ceres Power Holdings plc | pre-ricavi | 3 | 8% | 25% | — |
-| 🟡 | ORSTED.CO · | Ørsted A/S | crescita | 2 | 73% | 80% | diluizione 20%/anno |
-| 🟡 | PRY.MI | Prysmian S.p.A. | stabile | 2 | n/d | 59% | — |
-| 🟡 | ANE.MC · | Corporación Acciona Energías | stabile | 2 | -34% | 75% | ricavi -34% |
+| 🟡 | CWR.L · | Ceres Power Holdings plc | pre-ricavi | 3 | 8% | 26% | — |
+| 🟡 | KEN · | Kenon Holdings Ltd. | crescita | 3 | 93% | 56% | debito netto/EBITDA 7.6x |
+| 🟡 | ORSTED.CO · | Ørsted A/S | crescita | 2 | 73% | 82% | diluizione 20%/anno |
+| 🟡 | PRY.MI | Prysmian S.p.A. | stabile | 2 | n/d | 63% | — |
+| 🟡 | ANE.MC · | Corporación Acciona Energías | stabile | 2 | -34% | 76% | ricavi -34% |
 | 🟡 | FPS · | Forgent Power Solutions, Inc | crescita | 2 | 69% | 29% | — |
 | 🟡 | ENIC · | Enel Chile S.A. | stabile | 2 | 3% | 83% | — |
 | 🟡 | ORA · | Ormat Technologies, Inc. | stabile | 2 | 10% | 58% | — |
 | 🟡 | TAC · | TransAlta Corporation | stabile | 2 | -13% | 85% | ricavi -13% |
-| 🟡 | ERG.MI · | ERG S.p.A. | stabile | 2 | 1% | 83% | utili -7% |
+| 🟡 | ERG.MI · | ERG S.p.A. | stabile | 2 | 1% | 84% | utili -7% |
 | 🟡 | ACCV · | Accelevation Holdings Corp. | crescita | 2 | 66% | 56% | debito netto/EBITDA 4.2x |
+| 🟡 | FAG.ST · | Fagerhult Group AB (publ.) | stabile | 2 | -8% | 28% | debito netto/EBITDA 4.7x; ricavi -8%; utili -90% |
 | 🟡 | TGB · | Trekor Metals Limited | crescita | 2 | 97% | 58% | — |
-| 🟡 | FAG.ST · | Fagerhult Group AB (publ.) | stabile | 2 | -8% | 27% | debito netto/EBITDA 4.7x; ricavi -8%; utili -90% |
-| 🟡 | SLR.MC · | Solaria Energía y Medio Ambi | stabile | 2 | -4% | 51% | ricavi -4% |
-| 🟡 | PFS0.DE · | PFISTERER Holding SE | stabile | 2 | 12% | 49% | — |
-| 🟡 | RSGN.SW · | R&S Group Holding AG | stabile | 2 | -13% | 62% | diluizione 20%/anno; ricavi -13%; utili -22% |
+| 🟡 | SLR.MC · | Solaria Energía y Medio Ambi | stabile | 2 | -4% | 54% | ricavi -4% |
+| 🟡 | PFS0.DE · | PFISTERER Holding SE | stabile | 2 | 12% | 51% | — |
+| 🟡 | RSGN.SW · | R&S Group Holding AG | stabile | 2 | -13% | 66% | diluizione 20%/anno; ricavi -13%; utili -22% |
 | 🟡 | XIFR · | XPLR Infrastructure, LP | stabile | 2 | 5% | 48% | debito netto/EBITDA 8.0x |
-| 🟡 | ADX.MC · | Audax Renovables, S.A. | crescita | 2 | 23% | 69% | — |
+| 🟡 | ADX.MC · | Audax Renovables, S.A. | crescita | 2 | 23% | 72% | — |
 | 🟡 | KE · | Kimball Electronics, Inc. | stabile | 2 | 7% | 58% | utili -73% |
 | 🟡 | FAC · | Factorial Energy Inc. | pre-ricavi | 2 | n/d | 14% | — |
 | 🟡 | BLDP · | Ballard Power Systems Inc. | stabile | 2 | -31% | 16% | ricavi -31% |
 | 🟡 | BE · | Bloom Energy Corporation | crescita | 1 | 138% | 44% | — |
-| 🟡 | NEX.PA | Nexans S.A. | crescita | 1 | 19% | 67% | — |
-| 🟡 | CENER.BR · | Cenergy Holdings SA | crescita | 1 | 20% | 72% | — |
-| 🟡 | DNR.MI · | Industrie De Nora S.p.A. | stabile | 1 | 4% | 65% | — |
-| 🟡 | PCELL.ST · | PowerCell Sweden AB (publ) | stabile | 1 | -62% | 41% | ricavi -62% |
-| 🟡 | MRN.PA · | Mersen S.A. | stabile | 1 | 0% | 73% | — |
+| 🟡 | NEX.PA | Nexans S.A. | crescita | 1 | 19% | 70% | — |
+| 🟡 | CENER.BR · | Cenergy Holdings SA | crescita | 1 | 20% | 73% | — |
+| 🟡 | DNR.MI · | Industrie De Nora S.p.A. | stabile | 1 | 4% | 68% | — |
+| 🟡 | MRN.PA · | Mersen S.A. | stabile | 1 | 0% | 78% | — |
 | 🟡 | ADSE · | ADS-TEC Energy PLC | pre-ricavi | 1 | -50% | 72% | — |
-| 🟡 | FCEL · | FuelCell Energy, Inc. | stabile | 1 | -29% | 20% | diluizione 50%/anno; ricavi -29% |
 | 🟡 | NRGV · | Energy Vault Holdings, Inc. | stabile | 0 | -61% | 46% | ricavi -61% |
-| 🔴 | CLOUD.OL · | Cloudberry Clean Energy ASA | crescita | 5 | 154% | 93% | debito netto/EBITDA 9.5x |
+| 🔴 | CLOUD.OL · | Cloudberry Clean Energy ASA | crescita | 5 | 154% | 95% | debito netto/EBITDA 9.5x |
 | 🔴 | ENR · | Energizer Holdings, Inc. | stabile | 5 | -5% | 95% | debito netto/EBITDA 6.4x; ricavi -5% |
 | 🔴 | CWEN · | Clearway Energy, Inc. | crescita | 4 | 22% | 72% | debito netto/EBITDA 8.1x |
-| 🔴 | TRIG.L · | The Renewables Infrastructur | pre-ricavi | 4 | n/d | 96% | runway 0.3 anni |
+| 🔴 | TRIG.L · | The Renewables Infrastructur | pre-ricavi | 4 | n/d | 98% | runway 0.3 anni |
 | 🔴 | NEE | NextEra Energy, Inc. | stabile | 3 | 2% | 86% | debito netto/EBITDA 8.1x |
-| 🔴 | SCATC.OL · | Scatec ASA | crescita | 3 | 50% | 59% | debito netto/EBITDA 11.6x |
+| 🔴 | SCATC.OL · | Scatec ASA | crescita | 3 | 50% | 61% | debito netto/EBITDA 11.6x |
 | 🔴 | ENLT · | Enlight Renewable Energy Ltd | crescita | 3 | 35% | 57% | debito netto/EBITDA 11.6x |
-| 🔴 | COXG.MC · | Cox Infrastructure Group, S. | crescita | 3 | 73% | 71% | diluizione 71%/anno; debito netto/EBITDA 16.5x |
-| 🔴 | VLTSA.PA · | Voltalia SA | crescita | 3 | 32% | 40% | debito netto/EBITDA 15.4x |
+| 🔴 | COXG.MC · | Cox Infrastructure Group, S. | crescita | 3 | 73% | 70% | diluizione 71%/anno; debito netto/EBITDA 16.5x |
+| 🔴 | VLTSA.PA · | Voltalia SA | crescita | 3 | 32% | 42% | debito netto/EBITDA 15.4x |
 | 🔴 | HYLN · | Hyliion Holdings Corp. | pre-ricavi | 3 | 882% | 23% | runway 1.6 anni |
-| 🔴 | EDPR.LS · | EDP Renewables, S.A. | stabile | 2 | 13% | 87% | debito netto/EBITDA 8.6x |
-| 🔴 | ARN.MI · | Alerion Clean Power S.p.A. | stabile | 2 | 7% | 52% | debito netto/EBITDA 9.5x |
-| 🔴 | XPP.L · | XP Power Limited | stabile | 2 | -2% | 67% | debito netto/EBITDA 12.5x; ricavi -2% |
-| 🔴 | FERRO.ST · | Ferroamp AB (publ) | crescita | 2 | 250% | 72% | runway 0.2 anni; diluizione 63%/anno |
+| 🔴 | EDPR.LS · | EDP Renewables, S.A. | stabile | 2 | 13% | 89% | debito netto/EBITDA 8.6x |
+| 🔴 | ARN.MI · | Alerion Clean Power S.p.A. | stabile | 2 | 7% | 54% | debito netto/EBITDA 9.5x |
+| 🔴 | AMPX · | Amprius Technologies, Inc. | crescita | 2 | 83% | 23% | runway 1.6 anni; diluizione 17%/anno |
+| 🔴 | XPP.L · | XP Power Limited | stabile | 2 | -2% | 70% | debito netto/EBITDA 12.5x; ricavi -2% |
+| 🔴 | FERRO.ST · | Ferroamp AB (publ) | crescita | 2 | 250% | 74% | runway 0.2 anni; diluizione 63%/anno |
 | 🔴 | BEP · | Brookfield Renewable Partner | stabile | 1 | 12% | 80% | debito netto/EBITDA 13.6x |
 | 🔴 | PLUG · | Plug Power Inc. | stabile | 0 | 13% | 25% | runway 0.5 anni; diluizione 33%/anno |
 | 🔴 | FOIL · | Londian Wason New Energy Tec | crescita | 0 | 16% | 44% | debito netto/EBITDA 11.5x |
@@ -154,7 +152,7 @@ Seguiti: 138 | Verdi: **7** | Nuovi verdi: — | Persi: AQ.ST
 | | Ticker | Nome | Profilo | Score | Ricavi q/q | % max 52w | Campanelli |
 |---|---|---|---|---|---|---|---|
 | 🟡 | 3750.HK | Contemporary Amperex Technol | crescita | 4 | 59% | 38% | — |
-| 🟡 | 300750.SZ | Contemporary Amperex Technol | crescita | 4 | 59% | 43% | — |
+| 🟡 | 300750.SZ | Contemporary Amperex Technol | crescita | 4 | 59% | 44% | — |
 | 🟡 | MP | MP Materials Corp. | crescita | 4 | 191% | 46% | — |
 | 🟡 | ALB | Albemarle Corporation | crescita | 2 | 19% | 37% | — |
 | 🟡 | QS | QuantumScape Corporation | stabile | 1 | n/d | 22% | — |
